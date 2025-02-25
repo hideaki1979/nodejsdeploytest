@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 
 app.get('/', (req, res) => {
-  res.send('Hello World!!! This is a updatetestdayo! for CI/CD');
+  res.send('Hello World!!! This is a autodeployshitekure!!! for CI/CD');
 });
 
 const PORT = process.env.PORT || 3000;
