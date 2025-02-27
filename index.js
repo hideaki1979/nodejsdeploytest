@@ -1,10 +1,13 @@
 require('dotenv').config();
+const cors = require('cors');
 const express = require('express');
 const app = express();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 app.use(express.json());
+app.use(cors());
+
 
 app.get('/', (req, res) => {
   res.send('Hello World!!! This is a autodeployshitekure!!! for CI/CD');
