@@ -4,6 +4,8 @@ const app = express();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+app.use(express.json());
+
 app.get('/', (req, res) => {
   res.send('Hello World!!! This is a autodeployshitekure!!! for CI/CD');
 });
@@ -14,8 +16,8 @@ app.get('/health', (req, res) => {
 });
 
 // テストデータ追加エンドポイント
-app.get('/insert', async (req, res) => {
-    const value = req.query.value || "TestTextData";
+app.post('/insert', async (req, res) => {
+    const value = req.body.value || "TestTextData";
     try {
         const result = await prisma.test.create({
             data: {
