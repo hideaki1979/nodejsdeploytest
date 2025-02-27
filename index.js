@@ -15,7 +15,7 @@ app.get('/health', (req, res) => {
 
 // テストデータ追加エンドポイント
 app.get('/insert', async (req, res) => {
-    const value = req.query.value | "TestTextData";
+    const value = req.query.value || "TestTextData";
     try {
         const result = await prisma.test.create({
             data: {
