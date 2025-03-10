@@ -75,7 +75,6 @@ export class StoreService {
             })
 
             return { store, map }
-
         })
     }
 
