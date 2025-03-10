@@ -1,16 +1,152 @@
+// Prismaクライアントの生成設定
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"] // PostgreSQL拡張機能のサポートを有効化
 }
 
+// データベース接続設定
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL") // 環境変数からDB接続URLを取得
 }
 
+// 店舗情報を管理するモデル
+model Store {
+  id                  BigInt             @id @default(autoincrement())
+  store_name          String             @db.VarChar(255) // 店舗名
+  branch_name         String?            @db.VarChar(255) // 支店名
+  address             String             @db.VarChar(255) // 住所
+  business_hours      String             @db.VarChar(255) // 営業時間
+  regular_holidays    String             @db.VarChar(255) // 定休日
+  prior_meal_voucher  Boolean            @default(false) // 事前食券購入の有無
+  topping_details     String?            @db.Text // トッピング詳細
+  call_details        String?            @db.Text // コール詳細
+  is_all_increased    Boolean            @default(false) // 全体増量の有無
+  is_lot              Boolean            @default(false) // ロット制の有無
+  lot_detail          String?            @db.Text // ロット制詳細
+  created_at          DateTime           @default(now()) @db.Timestamp(6)
+  updated_at          DateTime           @updatedAt @db.Timestamp(6)
+  map                 Map? // 地図情報との関連
+  images              Image[] // 画像情報との関連
+  store_topping_calls StoreToppingCall[] // 店舗トッピングコールとの関連
+
+  @@map("stores")
+}
+
+// 店舗の位置情報を管理するモデル
+model Map {
+  id         BigInt   @id @default(autoincrement())
+  store_id   BigInt   @unique // 関連する店舗ID
+  latitude   Decimal  @db.Decimal(10, 8) // 緯度
+  longitude  Decimal  @db.Decimal(11, 8) // 経度
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @updatedAt @db.Timestamp(6)
+
+  store Store @relation(fields: [store_id], references: [id]) // 店舗との関連
+
+  @@map("maps")
+}
+
+// メニュー画像を管理するモデル
+model Image {
+  id                  BigInt                  @id @default(autoincrement())
+  store_id            BigInt // 関連する店舗ID
+  menu_type           Int                     @db.Integer // メニュータイプ
+  menu_name           String                  @db.Text // メニュー名
+  image_url           String                  @db.Text // 画像URL
+  created_at          DateTime                @default(now()) @db.Timestamp(6)
+  updated_at          DateTime                @updatedAt @db.Timestamp(6)
+  image_topping_calls ImageStoreToppingCall[] // 画像とトッピングコールの関連
+
+  store Store @relation(fields: [store_id], references: [id]) // 店舗との関連
+
+  @@map("images")
+}
+
+// 画像とトッピングコールの関連を管理する中間テーブル
+model ImageStoreToppingCall {
+  id                    BigInt   @id @default(autoincrement())
+  image_id              BigInt // 関連する画像ID
+  topping_id            BigInt // 関連するトッピングID
+  store_topping_call_id BigInt // 関連する店舗トッピングコールID
+  created_at            DateTime @default(now()) @db.Timestamp(6)
+  updated_at            DateTime @updatedAt @db.Timestamp(6)
+
+  // リレーション定義
+  image              Image            @relation(fields: [image_id], references: [id])
+  store_topping_call StoreToppingCall @relation(fields: [store_topping_call_id], references: [id])
+  topping            Topping          @relation(fields: [topping_id], references: [id])
+
+  @@map("image_store_topping_calls")
+}
+
+// トッピング情報を管理するモデル
+model Topping {
+  id                        BigInt                  @id @default(autoincrement())
+  topping_name              String                  @db.VarChar(255) // トッピング名
+  created_at                DateTime                @default(now()) @db.Timestamp(6)
+  updated_at                DateTime                @updatedAt @db.Timestamp(6)
+  store_topping_calls       StoreToppingCall[] // 店舗トッピングコールとの関連
+  image_store_topping_calls ImageStoreToppingCall[] // 画像とトッピングコールの関連
+
+  @@map("toppings")
+}
+
+// コールオプションを管理するモデル
+model CallOption {
+  id                  BigInt             @id @default(autoincrement())
+  call_category       Int                @db.Integer // コールカテゴリ
+  call_option_name    String             @db.VarChar(255) // コールオプション名
+  created_at          DateTime           @default(now()) @db.Timestamp(6)
+  updated_at          DateTime           @updatedAt @db.Timestamp(6)
+  store_topping_calls StoreToppingCall[] // 店舗トッピングコールとの関連
+
+  @@map("call_options")
+}
+
+// 麺の種類を管理するモデル
+model NoodleType {
+  id                  BigInt             @id @default(autoincrement())
+  noodle_type_name    String             @db.VarChar(255) // 麺の種類名
+  created_at          DateTime           @default(now()) @db.Timestamp(6)
+  updated_at          DateTime           @updatedAt @db.Timestamp(6)
+  store_topping_calls StoreToppingCall[] // 店舗トッピングコールとの関連
+
+  @@map("noodle_types")
+}
+
+// コールのタイミングを表す列挙型
+enum CallTiming {
+  pre_call // 事前コール
+  post_call // 着丼時コール
+}
+
+// 店舗ごとのトッピングコールを管理するモデル
+model StoreToppingCall {
+  id                        BigInt                  @id @default(autoincrement())
+  store_id                  BigInt // 関連する店舗ID
+  topping_id                BigInt // 関連するトッピングID
+  call_option_id            BigInt // 関連するコールオプションID
+  call_timing               CallTiming // コールタイミング
+  noodle_type_id            BigInt // 関連する麺の種類ID
+  created_at                DateTime                @default(now()) @db.Timestamp(6)
+  updated_at                DateTime                @updatedAt @db.Timestamp(6)
+  image_store_topping_calls ImageStoreToppingCall[] // 画像とトッピングコールの関連
+
+  // リレーション定義
+  store       Store      @relation(fields: [store_id], references: [id])
+  topping     Topping    @relation(fields: [topping_id], references: [id])
+  call_option CallOption @relation(fields: [call_option_id], references: [id])
+  noodle_type NoodleType @relation(fields: [noodle_type_id], references: [id])
+
+  @@map("store_topping_calls")
+}
+
+// テスト用のモデル
 model Test {
-  id         Int       @id(map: "primaryitem") @default(autoincrement())
-  text       String
-  created_at DateTime? @db.Timestamptz(6)
+  id         Int       @id(map: "primaryitem") @default(autoincrement()) // 主キー
+  text       String // テキストデータ
+  created_at DateTime? @db.Timestamptz(6) // 作成日時
 
   @@map("test")
 }

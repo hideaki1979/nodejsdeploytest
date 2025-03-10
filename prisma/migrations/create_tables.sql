@@ -56,7 +56,6 @@ CREATE TABLE image_store_topping_calls (
 CREATE TABLE toppings (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     topping_name VARCHAR(255),         -- トッピング名
-    topping_category INTEGER,          -- トッピングのカテゴリ
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
