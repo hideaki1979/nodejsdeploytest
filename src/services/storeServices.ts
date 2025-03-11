@@ -78,6 +78,10 @@ export class StoreService {
         })
     }
 
+    /**
+     * 全店舗情報とそれに紐づくマップ情報を取得する
+     * @returns IDに紐づく店舗情報
+     */
     async getStoreById(storeId: number) {
         const store = await prisma.store.findUnique({
             where: {
