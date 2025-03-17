@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
-import prisma from "../prismaClient";
 import { storeValidationRules } from "../middlewares/validation";
 import { StoreController } from "../controllers/storeController";
+import { ToppingController } from "../controllers/toppingController";
 
 /**
  * Express Routerのインスタンスを作成
@@ -9,6 +9,7 @@ import { StoreController } from "../controllers/storeController";
  */
 const router = Router();
 const storeController = new StoreController()
+const toppingController = new ToppingController()
 
 /**
  * ルートエンドポイント
@@ -28,30 +29,6 @@ router.get('/health', (req, res) => {
 })
 
 /**
- * テストデータ追加エンドポイント
- * 指定されたテキストデータをデータベースに保存する
- * リクエストボディからデータを取得し、ない場合はデフォルト値を使用
- * @param {string} req.body.value - 保存するテキスト値
- * @returns {object} 作成結果とステータス情報
- */
-router.post('/testinsert', async (req, res) => {
-    const value = req.body.value || "TestTextData";
-    try {
-        // Prismaを使用してデータベースにテストデータを挿入
-        const result = await prisma.test.create({
-            data: {
-                text: value
-            }
-        })
-        res.status(200).json({ status: 'success', message: 'Insert Success!!!', data: result });
-    } catch (error) {
-        // エラー発生時はログを出力し、エラーレスポンスを返す
-        console.error("Insert Error!!!", error);
-        res.status(500).json({ status: 'error', message: (error as Error).message });
-    }
-})
-
-/**
  * 店舗情報テーブル追加エンドポイント
  * 指定されたデータをデータベースに保存する
  * リクエストボディからデータを取得する。
@@ -68,6 +45,14 @@ router.get('/stores/:id', (req: Request, res: Response) => {
 
 router.get('/maps', (req: Request, res: Response) => {
     storeController.getMapAll(req, res)
+})
+
+router.get('/toppings', (req: Request, res: Response) => {
+    toppingController.getToppingAll(req, res)
+})
+
+router.get('/calloptions', (req: Request, res: Response) => {
+    toppingController.getCallOptionAll(req, res)
 })
 
 

@@ -31,19 +31,23 @@ export const storeValidationRules = [
     body('is_lot')
         .isBoolean().withMessage('ロット制の有無は真偽値で指定してください'),
 
-    // トッピング関連の配列のバリデーション
-    body('topping_garlic')
-        .isArray().withMessage('にんにくトッピングは配列で指定してください'),
+    body('topping_calls')
+        .optional()
+        .isArray().withMessage('トッピングコールは配列形式で指定してください'),
 
-    body('topping_oil')
-        .isArray().withMessage('アブラトッピングは配列で指定してください'),
+    body('topping_calls.*.topping_id')
+        .if(body('topping_calls').exists())
+        .isInt().withMessage('トッピングIDは整数で指定してください'),
 
-    body('topping_soy_sauce')
-        .isArray().withMessage('醤油トッピングは配列で指定してください'),
+    body('topping_calls.*.call_option_id')
+        .if(body('topping_calls').exists())
+        .isInt().withMessage('コールオプションIDは整数で指定してください'),
 
-    body('topping_vegetable')
-        .isArray().withMessage('野菜トッピングは配列で指定してください'),
+    body('topping_calls.*.call_timing')
+        .if(body('topping_calls').exists())
+        .isIn(['pre_call', 'post_call']).withMessage('コールタイミングは pre_call または post_call で指定してください'),
 
-    body('noodle_fitness')
-        .isArray().withMessage('麺の硬さは配列で指定してください')
+    body('topping_calls.*.noodle_type_id')
+        .if(body('topping_calls').exists())
+        .isInt().withMessage('麺タイプIDは整数で指定してください')
 ]

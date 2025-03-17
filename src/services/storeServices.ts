@@ -1,30 +1,7 @@
+import { StoreToppingCall } from "@prisma/client";
 import prisma from "../prismaClient"
+import { GeocodingResult, StoreData } from "../types/store";
 import { GeocodingService } from "./geocodingService"
-
-/**
- * 店舗データの型定義
- */
-interface StoreData {
-    store_name: string;
-    branch_name?: string;
-    address: string;
-    business_hours: string;
-    regular_holidays: string;
-    prior_meal_voucher: boolean;
-    topping_details?: string;
-    call_details?: string;
-    is_all_increased: boolean;
-    is_lot: boolean;
-    lot_detail?: string;
-}
-
-/**
- * ジオコーディングの結果型定義
- */
-interface GeocodingResult {
-    latitude: number;
-    longitude: number;
-}
 
 /**
  * 店舗情報に関するビジネスロジックを提供するサービスクラス
@@ -46,7 +23,7 @@ export class StoreService {
         // トランザクション開始
         return await prisma.$transaction(async (tx) => {
             // 店舗データをセット
-            const storeData: StoreData = {
+            const storeData: Omit<StoreData, 'topping_calls'> = {
                 store_name: data.store_name,
                 branch_name: data.branch_name,
                 address: data.address,
@@ -65,7 +42,7 @@ export class StoreService {
                 data: storeData
             })
 
-            // map情報灯登録
+            // map情報登録
             const map = await tx.map.create({
                 data: {
                     store_id: store.id,
@@ -74,18 +51,82 @@ export class StoreService {
                 }
             })
 
-            return { store, map }
+            // 店舗別トッピングコール情報の登録
+            let storeToppingCalls: StoreToppingCall[] = [];
+
+            if (data.topping_calls?.length && data.topping_calls?.length > 0) {
+                // map関数でPromiseの配列を作成し、Promise.allで並列実行
+                storeToppingCalls = await Promise.all(
+                    data.topping_calls.map(toppingCall =>
+                        tx.storeToppingCall.create({
+                            data: {
+                                store_id: store.id,
+                                topping_id: toppingCall.topping_id,
+                                call_option_id: toppingCall.call_option_id,
+                                call_timing: toppingCall.call_timing,
+                                noodle_type_id: toppingCall.noodle_type_id
+                            }
+                        })
+                    )
+                )
+            }
+            return { store, map, storeToppingCalls }
         })
     }
 
     /**
-     * 全店舗情報とそれに紐づくマップ情報を取得する
-     * @returns IDに紐づく店舗情報
+     * 店舗IDに紐づく店舗情報と店舗別トッピングコール情報を取得する
+     * @returns IDに紐づく店舗と店舗別トッピングコール情報
      */
     async getStoreById(storeId: number) {
         const store = await prisma.store.findUnique({
             where: {
                 id: storeId
+            },
+            select: {
+                // 店舗基本情報を取得（storesの取得項目を明示することでouter joinの形式になる。省略するとinner joinの形になる）
+                id: true,
+                store_name: true,
+                branch_name: true,
+                address: true,
+                business_hours: true,
+                regular_holidays: true,
+                prior_meal_voucher: true,
+                topping_details: true,
+                call_details: true,
+                is_all_increased: true,
+                is_lot: true,
+                lot_detail: true,
+                // 関連情報を取得（store_topping_callsが存在しなくても店舗情報は返却される）
+                store_topping_calls: {
+                    select: {
+                        store_id: true,
+                        topping_id: true,
+                        call_option_id: true,
+                        call_timing: true,
+                        noodle_type_id: true,
+                        topping: {
+                            select: {
+                                id: true,
+                                topping_category: true,
+                                topping_name: true
+                            }
+                        },
+                        call_option: {
+                            select: {
+                                id: true,
+                                call_category: true,
+                                call_option_name: true
+                            }
+                        },
+                        noodle_type: {
+                            select: {
+                                id: true,
+                                noodle_type_name: true
+                            }
+                        }
+                    }
+                }
             }
         })
         if (!store) {

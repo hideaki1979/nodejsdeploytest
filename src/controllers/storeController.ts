@@ -25,6 +25,7 @@ export class StoreController {
    */
     async createStore(req: Request, res: Response): Promise<void> {
         try {
+            console.log(req.body)
             // バリデーションエラーの確認
             const errors = validationResult(req)
             // バリデーションエラーの場合はエラーで返す
@@ -34,7 +35,6 @@ export class StoreController {
                 })
                 return
             }
-
             // サービスクラスで店舗情報登録を実施
             const result = await this.storeService.createStore(req.body)
 
@@ -87,9 +87,9 @@ export class StoreController {
   */
     async getMapAll(req: Request, res: Response): Promise<void> {
         try {
-            // サービスクラスで店舗情報1件取得（ID）を実施
+            // サービスクラスでMAP情報全件取得を実施
             const results = await this.storeService.getMapAll()
-            console.log("MAP情報取得データ：", results)
+            // console.log("MAP情報取得データ：", results)
             res.status(200).json({
                 status: 'success',
                 message: "店舗情報を正常に取得できました。",
