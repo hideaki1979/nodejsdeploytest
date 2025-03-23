@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import { StoreService } from "../services/storeServices";
+import { type CallTiming } from "../types/store";
 
 /**
  * 店舗情報に関するリクエストを処理するコントローラー
@@ -25,7 +26,7 @@ export class StoreController {
    */
     async createStore(req: Request, res: Response): Promise<void> {
         try {
-            console.log(req.body)
+            // console.log(req.body)
             // バリデーションエラーの確認
             const errors = validationResult(req)
             // バリデーションエラーの場合はエラーで返す
@@ -102,6 +103,72 @@ export class StoreController {
                 message: error instanceof Error ? error.message : '店舗情報の取得中に予期せぬエラーが発生しました'
             })
         }
+    }
 
+    /**
+* 店舗情報を全件取得する
+* @param req リクエストオブジェクト
+* @param res レスポンスオブジェクト
+*/
+    async getStoresAll(req: Request, res: Response): Promise<void> {
+        try {
+            // サービスクラスで全店舗情報取得を実施
+            const results = await this.storeService.getStoresAll()
+            // console.log("全店舗情報データ", results)
+            res.status(200).json({
+                status: 'success',
+                message: "全店舗情報を正常に取得できました。",
+                data: results
+            })
+        } catch (error) {
+            console.error('全店舗情報取得エラー', error)
+            res.status(500).json({
+                status: 'error',
+                message: error instanceof Error ? error.message : '全店舗情報の取得中に予期せぬエラーが発生しました'
+            })
+        }
+    }
+    /**
+* コールタイミングに該当するコールトッピング情報を全件取得する
+* @param req リクエストオブジェクト
+* @param res レスポンスオブジェクト
+*/
+    async getStoreToppingCalls(req: Request, res: Response): Promise<void> {
+        try {
+            const id = Number(req.params.id)
+            const callTiming = req.query.call_timing as CallTiming
+
+            // パラメータのバリデーション
+            if (!id || isNaN(id)) {
+                res.status(400).json({
+                    status: 'error',
+                    message: '有効な店舗IDを指定してください'
+                })
+                return
+            }
+
+            // callTimingの値が有効かチェック
+            if (callTiming !== 'pre_call' && callTiming !== 'post_call') {
+                res.status(400).json({
+                    status: 'error',
+                    message: 'コールタイミングは pre_call または post_call を指定してください'
+                })
+                return
+            }
+            // サービスクラスでコールタイミング該当するコールトッピング情報を取得する
+            const result = await this.storeService.getStoreToppingCalls(id, callTiming)
+
+            res.status(200).json({
+                status: 'success',
+                message: "コールタイミングに該当するコールトッピング情報を正常に取得できました。",
+                data: result
+            })
+        } catch (error) {
+            console.error('トッピングコール情報取得エラー', error);
+            res.status(500).json({
+                status: 'error',
+                message: error instanceof Error ? error.message : 'トッピングコール情報の取得中に予期せぬエラーが発生しました'
+            })
+        }
     }
 }

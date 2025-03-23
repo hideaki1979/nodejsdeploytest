@@ -28,10 +28,8 @@ export class GeocodingService {
             const results = await this.geocoder.geocode(address)
 
             if (results.length === 0) {
-                return {
-                    latitude: 0,
-                    longitude: 0
-                }
+                console.error(`住所${address}で位置情報を取得出来ませんでした。`)
+                throw new Error("住所から位置情報を取得出来ませんでした。")
             }
 
             return {

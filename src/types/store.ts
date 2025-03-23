@@ -1,6 +1,11 @@
 /**
  * 店舗データの型定義
  */
+export type CallTiming = 'pre_call' | 'post_call';
+
+/**
+ * 店舗データの型定義
+ */
 export interface StoreData {
     store_name: string;
     branch_name?: string;
@@ -30,7 +35,7 @@ export interface GeocodingResult {
 export interface ToppingCallData {
     topping_id: number;
     call_option_id: number;
-    call_timing: 'pre_call' | 'post_call';
+    call_timing: CallTiming;
     noodle_type_id: number;
 }
 
@@ -41,6 +46,6 @@ export interface StoreToppingCallData {
     store_id: number;
     topping_id: number;
     call_option_id: number;
-    call_timing: 'pre_call' | 'post_call';
+    call_timing: CallTiming;
     noodle_type_id: number;
 }

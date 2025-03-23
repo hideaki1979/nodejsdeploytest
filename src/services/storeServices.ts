@@ -1,6 +1,6 @@
 import { StoreToppingCall } from "@prisma/client";
 import prisma from "../prismaClient"
-import { GeocodingResult, StoreData } from "../types/store";
+import { type CallTiming, GeocodingResult, StoreData } from "../types/store";
 import { GeocodingService } from "./geocodingService"
 
 /**
@@ -157,6 +157,52 @@ export class StoreService {
             },
         })
         return mapWithStores
+    }
 
+    /**
+     * 全店舗情報（id、店舗名、支店名）を取得する
+     * @returns 店舗情報のリスト
+     */
+    async getStoresAll() {
+        // 店舗フィールドの選択オプション生成
+        const stores = await prisma.store.findMany({
+            select: {
+                id: true,
+                store_name: true,
+                branch_name: true
+            }
+        })
+        return stores
+    }
+    /**
+ * 店舗別トッピングコール情報（事前コール／着丼前コール）を取得する
+ * @returns 店舗トッピングコール情報
+ */
+    async getStoreToppingCalls(storeId: number, callTiming: CallTiming) {
+        // 店舗別トッピングコール情報の事前コール選択オプション生成
+        const preStoreToppingCalls = await prisma.store.findUnique({
+            where: {
+                id: storeId
+            },
+            select: {
+                id: true,
+                store_name: true,
+                branch_name: true,
+                store_topping_calls: {
+                    where: {
+                        call_timing: callTiming
+                    },
+                    select: {
+                        store_id: true,
+                        topping_id: true,
+                        call_option_id: true,
+                        call_timing: true,
+                        noodle_type_id: true
+                    }
+                }
+            }
+        })
+        // console.log("シミュレーション店舗別トッピングコール情報：", preStoreToppingCalls)
+        return preStoreToppingCalls
     }
 }

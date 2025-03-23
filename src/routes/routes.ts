@@ -55,5 +55,12 @@ router.get('/calloptions', (req: Request, res: Response) => {
     toppingController.getCallOptionAll(req, res)
 })
 
+router.get('/stores', (req: Request, res: Response) => {
+    storeController.getStoresAll(req, res)
+})
+
+router.get('/stores/:id/toppingcalls', (req: Request, res: Response) => {
+    storeController.getStoreToppingCalls(req, res)
+})
 
 export default router;
