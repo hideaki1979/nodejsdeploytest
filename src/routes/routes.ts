@@ -1,7 +1,9 @@
-import { Router, Request, Response } from "express";
-import { storeValidationRules } from "../middlewares/validation";
-import { StoreController } from "../controllers/storeController";
-import { ToppingController } from "../controllers/toppingController";
+import { Router, Request, Response } from "express"
+import { storeValidationRules } from "../middlewares/validation"
+import { StoreController } from "../controllers/storeController"
+import { ToppingController } from "../controllers/toppingController"
+import { imageValidationRules } from "../middlewares/imageValidation"
+import { ImageController } from "../controllers/imageController"
 
 /**
  * Express Routerのインスタンスを作成
@@ -10,6 +12,7 @@ import { ToppingController } from "../controllers/toppingController";
 const router = Router();
 const storeController = new StoreController()
 const toppingController = new ToppingController()
+const imageController = new ImageController()
 
 /**
  * ルートエンドポイント
@@ -17,7 +20,7 @@ const toppingController = new ToppingController()
  * CI/CD動作確認用の表示も含む
  */
 router.get('/', (req, res) => {
-    res.send("Hello World!!! This is a autodeployshitekure!!! for CI/CD");
+    res.send("Hello World!!! This is a autodeployshitekure!!! for CI/CD")
 })
 
 /**
@@ -25,7 +28,7 @@ router.get('/', (req, res) => {
  * APIの稼働状態を確認するために使用
  */
 router.get('/health', (req, res) => {
-    res.send("API is working fine");
+    res.send("API is working fine")
 })
 
 /**
@@ -63,4 +66,8 @@ router.get('/stores/:id/toppingcalls', (req: Request, res: Response) => {
     storeController.getStoreToppingCalls(req, res)
 })
 
-export default router;
+router.post('/stores/:id/images', imageValidationRules, (req: Request, res: Response) => {
+    imageController.uploadStoreImage(req, res)
+})
+
+export default router

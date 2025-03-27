@@ -1,6 +1,6 @@
-import { StoreToppingCall } from "@prisma/client";
+import { Prisma, StoreToppingCall } from "@prisma/client";
 import prisma from "../prismaClient"
-import { type CallTiming, GeocodingResult, StoreData } from "../types/store";
+import { GeocodingResult, StoreData, StoreToppingCallFilter } from "../types/store";
 import { GeocodingService } from "./geocodingService"
 
 /**
@@ -178,7 +178,27 @@ export class StoreService {
  * 店舗別トッピングコール情報（事前コール／着丼前コール）を取得する
  * @returns 店舗トッピングコール情報
  */
-    async getStoreToppingCalls(storeId: number, callTiming: CallTiming) {
+    async getStoreToppingCalls(storeId: number, filters: StoreToppingCallFilter) {
+        // 検索条件を動的に構築
+        const callsWhereCondition: Prisma.StoreToppingCallWhereInput = {}
+
+        // 各フィルター条件を追加
+        if (filters?.callTiming && filters.callTiming !== 'all') {
+            callsWhereCondition.call_timing = filters.callTiming
+        }
+
+        if (filters?.toppingId) {
+            callsWhereCondition.topping_id = filters.toppingId
+        }
+
+        if (filters?.call_option_id) {
+            callsWhereCondition.call_option_id = filters.call_option_id
+        }
+
+        if (filters?.noodleTypeId) {
+            callsWhereCondition.noodle_type_id = filters.noodleTypeId
+        }
+
         // 店舗別トッピングコール情報の事前コール選択オプション生成
         const preStoreToppingCalls = await prisma.store.findUnique({
             where: {
@@ -189,10 +209,9 @@ export class StoreService {
                 store_name: true,
                 branch_name: true,
                 store_topping_calls: {
-                    where: {
-                        call_timing: callTiming
-                    },
+                    where: callsWhereCondition,
                     select: {
+                        id: true,
                         store_id: true,
                         topping_id: true,
                         call_option_id: true,

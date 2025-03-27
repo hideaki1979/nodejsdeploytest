@@ -33,9 +33,10 @@ CREATE TABLE maps (
 CREATE TABLE images (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     store_id BIGINT REFERENCES stores(id), -- 店舗への参照キー
+    user_id BIGINT REFERENCES users(id),   -- ユーザーへの参照キー
     menu_type INTEGER,                     -- メニューの種類を表す数値
     menu_name TEXT,                        -- メニュー名
-    image_url TEXT,                        -- 画像のURL
+    image_url TEXT,                        -- 画像のURL（FireBase Storage）
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

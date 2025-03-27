@@ -49,3 +49,10 @@ export interface StoreToppingCallData {
     call_timing: CallTiming;
     noodle_type_id: number;
 }
+
+export interface StoreToppingCallFilter {
+    callTiming?: CallTiming | 'all';
+    toppingId?: number;
+    call_option_id?: number;
+    noodleTypeId?: number;
+}

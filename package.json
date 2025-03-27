@@ -20,17 +20,19 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-validator": "^7.2.1",
-    "firebase-admin": "^13.1.0",
+    "firebase-admin": "^13.2.0",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "node-geocoder": "^4.4.1",
-    "pg": "^8.13.3"
+    "pg": "^8.13.3",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
+    "@types/uuid": "^10.0.0",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",
     "eslint": "^9.21.0",

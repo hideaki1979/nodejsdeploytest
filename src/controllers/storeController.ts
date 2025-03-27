@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import { StoreService } from "../services/storeServices";
-import { type CallTiming } from "../types/store";
+import { StoreToppingCallFilter } from "../types/store";
 
 /**
  * 店舗情報に関するリクエストを処理するコントローラー
@@ -136,7 +136,6 @@ export class StoreController {
     async getStoreToppingCalls(req: Request, res: Response): Promise<void> {
         try {
             const id = Number(req.params.id)
-            const callTiming = req.query.call_timing as CallTiming
 
             // パラメータのバリデーション
             if (!id || isNaN(id)) {
@@ -147,16 +146,51 @@ export class StoreController {
                 return
             }
 
-            // callTimingの値が有効かチェック
-            if (callTiming !== 'pre_call' && callTiming !== 'post_call') {
-                res.status(400).json({
-                    status: 'error',
-                    message: 'コールタイミングは pre_call または post_call を指定してください'
-                })
-                return
+            // フィルター条件をオブジェクトとして構築
+            const filters: StoreToppingCallFilter = {}
+
+            // クエリパラメータから各フィルター条件を取得
+            if (req.query.call_timing) {
+                const callTiming = req.query.call_timing as StoreToppingCallFilter['callTiming']
+
+                if (callTiming !== 'pre_call' && callTiming !== 'post_call' && callTiming !== 'all') {
+                    res.status(400).json({
+                        status: 'error',
+                        message: 'コールタイミングは pre_call または post_call または all を指定してください'
+                    })
+                    return
+                }
+
+                filters.callTiming = callTiming
             }
+
+            // トッピングIDのパラメータがある場合
+            if (req.query.topping_id) {
+                const toppingId = Number(req.query.topping_id)
+                if (!isNaN(toppingId)) {
+                    filters.toppingId = toppingId
+                }
+            }
+
+            // コールオプションIDのパラメータがある場合
+            if (req.query.call_option_id) {
+                const optionId = Number(req.query.call_option_id)
+                if (!isNaN(optionId)) {
+                    filters.call_option_id = optionId
+                }
+            }
+
+            // 麺種別IDのパラメータがある場合
+            if (req.query.noodleTypeId) {
+                const noodleTypeId = Number(req.query.noodleTypeId)
+                if (!isNaN(noodleTypeId)) {
+                    filters.noodleTypeId = noodleTypeId
+                }
+            }
+
+            // callTimingの値が有効かチェック
             // サービスクラスでコールタイミング該当するコールトッピング情報を取得する
-            const result = await this.storeService.getStoreToppingCalls(id, callTiming)
+            const result = await this.storeService.getStoreToppingCalls(id, filters)
 
             res.status(200).json({
                 status: 'success',

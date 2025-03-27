@@ -51,6 +51,7 @@ model Map {
 model Image {
   id                  BigInt                  @id @default(autoincrement())
   store_id            BigInt // 関連する店舗ID
+  user_id             BigInt // 将来アカウントで制御を行うため項目追加
   menu_type           Int                     @db.Integer // メニュータイプ
   menu_name           String                  @db.Text // メニュー名
   image_url           String                  @db.Text // 画像URL
