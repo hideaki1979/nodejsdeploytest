@@ -70,4 +70,8 @@ router.post('/stores/:id/images', imageValidationRules, (req: Request, res: Resp
     imageController.uploadStoreImage(req, res)
 })
 
+router.get(`/stores/:id/images`, (req: Request, res: Response) => {
+    imageController.getStoreImages(req, res)
+})
+
 export default router

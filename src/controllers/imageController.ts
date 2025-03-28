@@ -40,7 +40,7 @@ export class ImageController {
             const result = await this.imageService.createImage(imageData)
 
             // 正常終了レスポンスをリターン
-            res.status(200).json({
+            res.status(201).json({
                 status: 'success',
                 message: "画像が正常にアップロードしました！",
                 data: {
@@ -57,6 +57,32 @@ export class ImageController {
                 message: error instanceof Error
                     ? error.message
                     : '画像のアップロード中に予期せぬエラーが発生しました'
+            })
+        }
+    }
+
+    async getStoreImages(req: Request, res: Response): Promise<void> {
+        try {
+            const storeId = Number(req.params.id)
+
+            // サービスクラスから店舗単位の画像情報を取得する。
+            const result = await this.imageService.getImageByStoreId(storeId)
+
+            // 正常終了レスポンスをリターン
+            res.status(200).json({
+                status: 'success',
+                message: "店舗別画像情報を正常に取得できました。",
+                data: result
+            })
+        } catch (error) {
+            // エラーをログに記録し、エラーレスポンスを返す
+            console.error('店舗別画像情報取得エラー:', error)
+
+            res.status(500).json({
+                status: 'error',
+                message: error instanceof Error
+                    ? error.message
+                    : '店舗別画像データ取得中に予期せぬエラーが発生しました'
             })
         }
     }

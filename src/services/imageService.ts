@@ -1,5 +1,5 @@
 import prisma from "../prismaClient";
-import { StoreImageUploadData } from "../types/image";
+import { StoreImageDownloadData, StoreImageUploadData } from "../types/image";
 import { v4 as uuidv4 } from 'uuid'
 import { bucket } from "../config/firebase";
 
@@ -15,9 +15,9 @@ export class ImageService {
             // トランザクションで処理することで、データの整合性を担保
             return await prisma.$transaction(async (tx) => {
                 // Base64画像データをバッファに変換
-                console.log("base64：", data.image_base64)
+                // console.log("base64：", data.image_base64)
                 const matches = data.image_base64!.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
-                console.log("matches：", matches)
+                // console.log("matches：", matches)
                 if (!matches || matches.length !== 3) {
                     throw new Error('無効な画像データ形式です');
                 }
@@ -87,6 +87,75 @@ export class ImageService {
             throw error instanceof Error
                 ? error
                 : new Error('画像のアップロードに失敗しました');
+        }
+    }
+
+    /**
+     * 店舗IDに紐づく画像情報を取得する。
+     * 画像情報には、店舗ID、ユーザーID、メニュー種類、メニュー名、画像URL、トッピングコール情報が含まれます。
+     * トッピングコール情報が存在する場合は、トッピングID、トッピング名、コールオプションID、コールオプション名を含む配列が返されます。
+     * @param storeId 店舗ID
+     * @returns 画像情報とトッピングコール情報の配列
+     */
+    async getImageByStoreId(storeId: string | number): Promise<StoreImageDownloadData[]> {
+        try {
+            // 店舗IDをBigIntに変換
+            const storeBigInt = BigInt(storeId)
+
+            // 画像情報を取得
+            const images = await prisma.image.findMany({
+                where: {
+                    store_id: storeBigInt
+                }
+            })
+
+            const storeImageToppingOptions: StoreImageDownloadData[] = []
+
+            //  各画像のトッピングオプション情報を取得する。
+            for (const image of images) {
+                // 画像に関連するトッピングコール情報を取得する。
+                const toppingCalls = await prisma.imageStoreToppingCall.findMany({
+                    where: {
+                        image_id: image.id
+                    },
+                    include: {
+                        store_topping_call: {
+                            include: {
+                                topping: true,
+                                call_option: true
+                            }
+                        }
+                    }
+                })
+
+                // 画像別トッピングコール情報を整形
+                const formattedToppingCalls = toppingCalls.map(call => ({
+                    topping_id: Number(call.topping_id),
+                    topping_name: call.store_topping_call.topping.topping_name,
+                    call_option_id: Number(call.store_topping_call.call_option_id),
+                    call_option_name: call.store_topping_call.call_option.call_option_name
+                }))
+
+                //  StoreImageDownloadData型で格納する。
+                storeImageToppingOptions.push({
+                    id: Number(image.id),
+                    store_id: Number(image.store_id),
+                    user_id: Number(image.user_id),
+                    menu_type: image.menu_type,
+                    menu_name: image.menu_name,
+                    image_url: image.image_url,
+                    topping_calls: formattedToppingCalls.length > 0 ? formattedToppingCalls : undefined
+
+                })
+            }
+            console.log("画像情報：", storeImageToppingOptions)
+            return storeImageToppingOptions
+
+        } catch (error) {
+            console.error('画像情報取得エラー:', error);
+            throw error instanceof Error
+                ? error
+                : new Error('店舗の画像情報取得に失敗しました')
         }
     }
 
