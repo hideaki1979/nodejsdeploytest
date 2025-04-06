@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
 import { StoreService } from "../services/storeServices";
-import { StoreToppingCallFilter } from "../types/store";
+import { FormattedToppingOptionNameStoreData, StoreToppingCallFilter } from "../types/store";
 
 /**
  * 店舗情報に関するリクエストを処理するコントローラー
@@ -64,7 +64,8 @@ export class StoreController {
         const numStoreId = Number(storeId)
         try {
             // サービスクラスで店舗情報1件取得（ID）を実施
-            const result = await this.storeService.getStoreById(numStoreId)
+            const result: FormattedToppingOptionNameStoreData = await this.storeService.getStoreById(numStoreId)
+            result.id = Number(result.id)
             // console.log("店舗情報取得サービスデータ：", result)
             res.status(200).json({
                 status: 'success',
@@ -128,11 +129,12 @@ export class StoreController {
             })
         }
     }
+
     /**
-* コールタイミングに該当するコールトッピング情報を全件取得する
-* @param req リクエストオブジェクト
-* @param res レスポンスオブジェクト
-*/
+    * コールタイミングに該当するコールトッピング情報を全件取得する
+    * @param req リクエストオブジェクト
+    * @param res レスポンスオブジェクト
+    */
     async getStoreToppingCalls(req: Request, res: Response): Promise<void> {
         try {
             const id = Number(req.params.id)
@@ -188,9 +190,9 @@ export class StoreController {
                 }
             }
 
-            // callTimingの値が有効かチェック
             // サービスクラスでコールタイミング該当するコールトッピング情報を取得する
             const result = await this.storeService.getStoreToppingCalls(id, filters)
+            // console.log("シミュレーション用店舗別トッピングコール情報データ：", JSON.stringify(result, null, 2))
 
             res.status(200).json({
                 status: 'success',

@@ -132,7 +132,58 @@ export class StoreService {
         if (!store) {
             throw new Error(`ID: ${storeId} の店舗は見つかりませんでした`)
         }
-        return store
+
+        // トッピングコールをコールタイミングで分類
+        const preToppingOptions = store.store_topping_calls.filter(pre => pre.call_timing === "pre_call")
+        const postToppingOptions = store.store_topping_calls.filter(post => post.call_timing === "post_call")
+
+        // データ整形用変数の構造体定義
+        const preCallFormatted: Record<string, string[]> = {}
+        const postCallFormatted: Record<string, string[]> = {}
+
+        // 事前コールのデータ整形
+        for (const preCall of preToppingOptions) {
+            // 各配列のトッピング名・コールオプション名を取得
+            const toppingName = preCall.topping?.topping_name
+            const optionName = preCall.call_option?.call_option_name
+
+            // 初回はデータ整形用変数の初期化を行う
+            if (!preCallFormatted[toppingName]) {
+                preCallFormatted[toppingName] = []
+            }
+
+            // トッピングコールが重複しなければコール内容を格納
+            if (!preCallFormatted[toppingName].includes(preCall.call_option?.call_option_name)) {
+                preCallFormatted[toppingName].push(optionName)
+            }
+        }
+
+        // 着丼前のデータ整形
+        for (const postCall of postToppingOptions) {
+            // 各配列のトッピング名・コールオプション名を取得する
+            const toppingName = postCall.topping.topping_name
+            const optionName = postCall.call_option.call_option_name
+
+            // 各トッピング配列の初回は初期化を行う
+            if (!postCallFormatted[toppingName]) {
+                postCallFormatted[toppingName] = []
+            }
+
+            // トッピング名のコールオプションが重複しなければ格納する
+            if (!postCallFormatted[toppingName].includes(optionName)) {
+                postCallFormatted[toppingName].push(optionName)
+            }
+        }
+        // 元の店舗情報から店舗別トッピングコール情報を削除して格納する。
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { store_topping_calls: _, ...storeData } = store
+
+        // 整形したデータをリターンする。
+        return {
+            ...storeData,
+            preCallFormatted,
+            postCallFormatted
+        }
     }
 
     /**
@@ -200,7 +251,7 @@ export class StoreService {
         }
 
         // 店舗別トッピングコール情報の事前コール選択オプション生成
-        const preStoreToppingCalls = await prisma.store.findUnique({
+        const storeToppingCalls = await prisma.store.findUnique({
             where: {
                 id: storeId
             },
@@ -216,12 +267,90 @@ export class StoreService {
                         topping_id: true,
                         call_option_id: true,
                         call_timing: true,
-                        noodle_type_id: true
+                        noodle_type_id: true,
+                        topping: {
+                            select: {
+                                id: true,
+                                topping_name: true,
+                                topping_category: true
+                            }
+                        },
+                        call_option: {
+                            select: {
+                                id: true,
+                                call_option_name: true,
+                                call_category: true
+                            }
+                        }
                     }
                 }
             }
         })
         // console.log("シミュレーション店舗別トッピングコール情報：", preStoreToppingCalls)
-        return preStoreToppingCalls
+        if (!storeToppingCalls) {
+            throw new Error(`ID: ${storeId}の店舗は存在しません。`)
+        }
+
+        // console.log("storeToppingCalls：", JSON.stringify(storeToppingCalls, null, 2))
+
+        // トッピングごとにオプションをグループ化するためのマップを作成
+        const toppingOptionMap = new Map<number, {
+            toppingId: number;
+            toppingName: string;
+            options: {
+                optionId: number;
+                optionName: string;
+                storeToppingCallId?: number;
+            }[]
+        }>()
+
+        // 各トッピングコール情報を処理
+        for (const call of storeToppingCalls.store_topping_calls) {
+            const toppingId = Number(call.topping_id)
+            const toppingName = call.topping.topping_name
+            const optionId = Number(call.call_option_id)
+            const optionName = call.call_option.call_option_name
+            const storeToppingCallId = call.id ? Number(call.id) : undefined
+
+            // マップにトッピングが存在しない場合は新しく追加
+            if (!toppingOptionMap.has(toppingId)) {
+                toppingOptionMap.set(toppingId, {
+                    toppingId,
+                    toppingName,
+                    options: []
+                })
+            }
+
+            // オプションが重複しないように追加
+            const toppingData = toppingOptionMap.get(toppingId)
+            const optionExists = toppingData?.options.some(option => option.optionId === optionId)
+
+            // 存在しない場合のみ追加
+            if (!optionExists) {
+                toppingData?.options.push({
+                    optionId,
+                    optionName,
+                    // store_topping_call_idが undefined の場合は自動的にオプショナルフィールドとなる
+                    ...(storeToppingCallId !== undefined && { storeToppingCallId })
+                })
+            }
+            // console.log("toppingData：", toppingData)
+            // console.log("toppingOptionMap:");
+            // toppingOptionMap.forEach((value, key) => {
+            //     console.log(`Key: ${key}`, value);
+            // });
+        }
+
+        // Map内のデータを配列に変換して返却
+        const formattedToppingOptions = Array.from(toppingOptionMap)
+        // console.log("配列変換後データ：", JSON.stringify(formattedToppingOptions))
+
+        // 店舗情報と整形したトッピングオプションを返却
+        return {
+            id: Number(storeToppingCalls.id),
+            store_name: storeToppingCalls.store_name,
+            branch_name: storeToppingCalls.branch_name,
+            formattedToppingOptions: formattedToppingOptions
+        }
     }
 }
