@@ -74,4 +74,8 @@ router.get(`/stores/:id/images`, (req: Request, res: Response) => {
     imageController.getStoreImages(req, res)
 })
 
+router.get(`/toppings/calloptions`, (req: Request, res: Response) => {
+    toppingController.getFormattedToppingCollOption(req, res)
+})
+
 export default router
