@@ -24,6 +24,7 @@ model Store {
   is_all_increased    Boolean            @default(false) // 全体増量の有無
   is_lot              Boolean            @default(false) // ロット制の有無
   lot_detail          String?            @db.Text // ロット制詳細
+  is_close            Boolean            @default(false) // 閉店フラグ
   created_at          DateTime           @default(now()) @db.Timestamp(6)
   updated_at          DateTime           @updatedAt @db.Timestamp(6)
   map                 Map? // 地図情報との関連

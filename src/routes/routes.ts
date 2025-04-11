@@ -46,9 +46,18 @@ router.get('/stores/:id', (req: Request, res: Response) => {
     storeController.getStoreById(req, res)
 })
 
+router.get('/stores', (req: Request, res: Response) => {
+    storeController.getStoresAll(req, res)
+})
+
+router.put('/stores/:id', storeValidationRules, (req: Request, res: Response) => {
+    storeController.updateStore(req, res)
+})
+
 router.get('/maps', (req: Request, res: Response) => {
     storeController.getMapAll(req, res)
 })
+
 
 router.get('/toppings', (req: Request, res: Response) => {
     toppingController.getToppingAll(req, res)
@@ -56,10 +65,6 @@ router.get('/toppings', (req: Request, res: Response) => {
 
 router.get('/calloptions', (req: Request, res: Response) => {
     toppingController.getCallOptionAll(req, res)
-})
-
-router.get('/stores', (req: Request, res: Response) => {
-    storeController.getStoresAll(req, res)
 })
 
 router.get('/stores/:id/toppingcalls', (req: Request, res: Response) => {

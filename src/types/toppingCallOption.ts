@@ -18,3 +18,7 @@ export interface ResultToppingCall {
 export interface FormattedToppingOptionNames {
     [topping_name: string]: string[];
 }
+
+export interface FormattedToppingOptionIds {
+    [topping_id: number]: number[];
+}

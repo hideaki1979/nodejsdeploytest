@@ -12,6 +12,7 @@ export class ImageService {
    */
     async createImage(data: StoreImageUploadData) {
         try {
+            // console.log("data：", JSON.stringify(data, null, 2))
             // トランザクションで処理することで、データの整合性を担保
             return await prisma.$transaction(async (tx) => {
                 // Base64画像データをバッファに変換
@@ -135,6 +136,9 @@ export class ImageService {
                     call_option_id: Number(call.store_topping_call.call_option_id),
                     call_option_name: call.store_topping_call.call_option.call_option_name
                 }))
+
+                // console.log("画像別トッピングコールTBL情報：", JSON.stringify(toppingCalls, null, 2))
+                // console.log("データ整形後の画像トッピングコール情報：", formattedToppingCalls)
 
                 //  StoreImageDownloadData型で格納する。
                 storeImageToppingOptions.push({
