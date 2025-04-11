@@ -1,4 +1,4 @@
-import { FormattedToppingOptionNames } from "./toppingCallOption";
+import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "./toppingCallOption";
 
 /**
  * 店舗データの型定義
@@ -78,4 +78,8 @@ export interface FormattedToppingOptionNameStoreData {
     // （トッピング・オプション）整形済名称リスト
     preCallFormatted: FormattedToppingOptionNames;
     postCallFormatted: FormattedToppingOptionNames;
+
+    // （トッピング・オプション）整形済IDリスト
+    preCallFormattedIds: FormattedToppingOptionIds;
+    postCallFormattedIds: FormattedToppingOptionIds;
 }

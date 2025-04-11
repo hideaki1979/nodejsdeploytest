@@ -2,6 +2,7 @@ import { Prisma, StoreToppingCall } from "@prisma/client";
 import prisma from "../prismaClient"
 import { GeocodingResult, StoreData, StoreToppingCallFilter } from "../types/store";
 import { GeocodingService } from "./geocodingService"
+import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "../types/toppingCallOption";
 
 /**
  * 店舗情報に関するビジネスロジックを提供するサービスクラス
@@ -75,8 +76,81 @@ export class StoreService {
     }
 
     /**
-     * 店舗IDに紐づく店舗情報と店舗別トッピングコール情報を取得する
-     * @returns IDに紐づく店舗と店舗別トッピングコール情報
+     * 店舗情報を更新する
+     * トランザクションを使用して、店舗情報とマップ情報、店舗別トッピングコール情報を同時に更新する
+     * @param storeId 店舗ID
+     * @param data フロントエンドから受け取ったデータ
+     * @returns 更新された店舗、map情報、店舗別トッピングコール情報
+     */
+    async updateStore(storeId: number, data: StoreData) {
+        const geoResult = await this.geoCodingService.geocodeAddress(data.address)
+
+        // トランザクション開始
+        return await prisma.$transaction(async (tx) => {
+            // 店舗データをセット
+            const storeData: Omit<StoreData, 'topping_calls'> = {
+                store_name: data.store_name,
+                branch_name: data.branch_name,
+                address: data.address,
+                business_hours: data.business_hours,
+                regular_holidays: data.regular_holidays,
+                prior_meal_voucher: data.prior_meal_voucher,
+                topping_details: data.topping_details,
+                call_details: data.call_details,
+                is_all_increased: data.is_all_increased,
+                is_lot: data.is_lot,
+                lot_detail: data.lot_detail
+            }
+
+            // 店舗情報更新
+            const store = await tx.store.update({
+                where: { id: storeId },
+                data: storeData
+            })
+
+            // map情報更新
+            const map = await tx.map.update({
+                where: { store_id: storeId },
+                data: {
+                    latitude: geoResult.latitude,
+                    longitude: geoResult.longitude
+                }
+            })
+
+            // 店舗別トッピングコール情報の更新（削除→再登録）
+            // 1. 既存のトッピングコール情報を削除
+            await tx.storeToppingCall.deleteMany({
+                where: { store_id: storeId }
+            })
+
+            // 2. 新しいトッピングコール情報を登録
+            let storeToppingCalls: StoreToppingCall[] = []
+
+            if (data.topping_calls && data.topping_calls.length > 0) {
+                // map関数でPromiseの配列を作成し、Promise.allで並列実行
+                storeToppingCalls = await Promise.all(
+                    data.topping_calls.map(toppingCall =>
+                        tx.storeToppingCall.create({
+                            data: {
+                                store_id: storeId,
+                                topping_id: toppingCall.topping_id,
+                                call_option_id: toppingCall.call_option_id,
+                                call_timing: toppingCall.call_timing,
+                                noodle_type_id: toppingCall.noodle_type_id
+                            }
+                        })
+                    )
+                )
+            }
+            return { store, map, storeToppingCalls }
+        })
+    }
+
+    /**
+     * IDに基づいて店舗情報を取得
+     * @param storeId 店舗ID
+     * @returns 店舗情報（基本情報、店舗別トッピングコール情報）
+     * @throws Error IDに該当する店舗が見つからない場合
      */
     async getStoreById(storeId: number) {
         const store = await prisma.store.findUnique({
@@ -138,8 +212,11 @@ export class StoreService {
         const postToppingOptions = store.store_topping_calls.filter(post => post.call_timing === "post_call")
 
         // データ整形用変数の構造体定義
-        const preCallFormatted: Record<string, string[]> = {}
-        const postCallFormatted: Record<string, string[]> = {}
+        const preCallFormatted: FormattedToppingOptionNames = {}
+        const postCallFormatted: FormattedToppingOptionNames = {}
+
+        const preCallFormattedIds: FormattedToppingOptionIds = {}
+        const postCallFormattedIds: FormattedToppingOptionIds = {}
 
         // 事前コールのデータ整形
         for (const preCall of preToppingOptions) {
@@ -147,14 +224,26 @@ export class StoreService {
             const toppingName = preCall.topping?.topping_name
             const optionName = preCall.call_option?.call_option_name
 
+            // 各配列のトッピングID・コールオプションIDを取得
+            const toppingId = Number(preCall.topping_id)
+            const optionId = Number(preCall.call_option_id)
+
             // 初回はデータ整形用変数の初期化を行う
             if (!preCallFormatted[toppingName]) {
                 preCallFormatted[toppingName] = []
             }
 
+            if (!preCallFormattedIds[toppingId]) {
+                preCallFormattedIds[toppingId] = []
+            }
+
             // トッピングコールが重複しなければコール内容を格納
             if (!preCallFormatted[toppingName].includes(preCall.call_option?.call_option_name)) {
                 preCallFormatted[toppingName].push(optionName)
+            }
+
+            if (!preCallFormattedIds[toppingId].includes(optionId)) {
+                preCallFormattedIds[toppingId].push(optionId)
             }
         }
 
@@ -164,14 +253,26 @@ export class StoreService {
             const toppingName = postCall.topping.topping_name
             const optionName = postCall.call_option.call_option_name
 
+            // 各配列のトッピングID・コールオプションIDを取得
+            const toppingId = Number(postCall.topping_id)
+            const optionId = Number(postCall.call_option_id)
+
             // 各トッピング配列の初回は初期化を行う
             if (!postCallFormatted[toppingName]) {
                 postCallFormatted[toppingName] = []
             }
 
+            if (!postCallFormattedIds[toppingId]) {
+                postCallFormattedIds[toppingId] = []
+            }
+
             // トッピング名のコールオプションが重複しなければ格納する
             if (!postCallFormatted[toppingName].includes(optionName)) {
                 postCallFormatted[toppingName].push(optionName)
+            }
+
+            if (!postCallFormattedIds[toppingId].includes(optionId)) {
+                postCallFormattedIds[toppingId].push(optionId)
             }
         }
         // 元の店舗情報から店舗別トッピングコール情報を削除して格納する。
@@ -182,7 +283,9 @@ export class StoreService {
         return {
             ...storeData,
             preCallFormatted,
-            postCallFormatted
+            postCallFormatted,
+            preCallFormattedIds,
+            postCallFormattedIds
         }
     }
 

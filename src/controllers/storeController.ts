@@ -54,6 +54,43 @@ export class StoreController {
     }
 
     /**
+     * 店舗情報を更新する
+     * 店舗データと店舗別トッピングコール情報を同時にトランザクションで処理する
+     * @param req リクエストオブジェクト
+     * @param res レスポンスオブジェクト
+     */
+    async updateStore(req: Request, res: Response): Promise<void> {
+        try {
+            // バリデーションエラーの確認
+            const errors = validationResult(req)
+
+            if (!errors.isEmpty()) {
+                console.error("バリデーションエラー")
+                res.status(400).json({
+                    status: 'error',
+                    errors: errors.array()
+                })
+            }
+
+            const storeId = Number(req.params.id)
+            const result = await this.storeService.updateStore(storeId, req.body)
+
+            res.status(201).json({
+                data: result,
+                status: 'success',
+                message: '店舗情報が正常に更新されました'
+            })
+
+        } catch (error) {
+            console.error('店舗情報・店舗別トッピングコール情報更新エラー', error)
+            res.status(500).json({
+                status: 'error',
+                message: error instanceof Error ? error.message : '店舗情報'
+            })
+        }
+    }
+
+    /**
    * 店舗情報を取得する
    * @param req リクエストオブジェクト
    * @param res レスポンスオブジェクト
@@ -65,8 +102,8 @@ export class StoreController {
         try {
             // サービスクラスで店舗情報1件取得（ID）を実施
             const result: FormattedToppingOptionNameStoreData = await this.storeService.getStoreById(numStoreId)
-            result.id = Number(result.id)
-            // console.log("店舗情報取得サービスデータ：", result)
+            // result.id = Number(result.id)
+            // console.log("店舗情報取得サービスデータ：", JSON.stringify(result, null, 2))
             res.status(200).json({
                 status: 'success',
                 message: "店舗情報を正常に取得できました。",
