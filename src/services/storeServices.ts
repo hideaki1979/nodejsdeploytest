@@ -305,7 +305,8 @@ export class StoreService {
                         id: true,
                         store_name: true,
                         branch_name: true,
-                        address: true
+                        address: true,
+                        is_close: true
                     }
                 }
             },
@@ -455,5 +456,27 @@ export class StoreService {
             branch_name: storeToppingCalls.branch_name,
             formattedToppingOptions: formattedToppingOptions
         }
+    }
+
+    /**
+     * 店舗を閉店扱いにする
+     * 店舗名に「【閉店】」を付与し、is_closeフィールドをtrueにする
+     * @param storeId 店舗ID
+     * @param storeName 店舗名
+     * @returns 閉店させた店舗情報
+     */
+    async storeClose(storeId: number, storeName: string) {
+        const closeStoreName = `【閉店】${storeName}`
+        const store = await prisma.store.update({
+            where: {
+                id: storeId
+            },
+            data: {
+                store_name: closeStoreName,
+                is_close: true
+            }
+        })
+        return store
+
     }
 }

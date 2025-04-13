@@ -237,10 +237,40 @@ export class StoreController {
                 data: result
             })
         } catch (error) {
-            console.error('トッピングコール情報取得エラー', error);
+            console.error('トッピングコール情報取得エラー', error)
             res.status(500).json({
                 status: 'error',
                 message: error instanceof Error ? error.message : 'トッピングコール情報の取得中に予期せぬエラーが発生しました'
+            })
+        }
+    }
+
+    /**
+     * 閉店処理を実行する
+     * @param req リクエストオブジェクト
+     * @param res レスポンスオブジェクト
+     * @remarks
+     * 閉店処理は、店舗の情報を更新することで実現する。
+     *店舗IDと店舗名を指定して、店舗情報を更新する。
+     *成功すると、201 Createdを返す。
+     *失敗すると、500 Internal Server Errorを返す。
+     */
+    async storeClose(req: Request, res: Response): Promise<void> {
+        try {
+            const storeId = Number(req.params.id)
+            const storeName = req.body.storeName
+            const result = this.storeService.storeClose(storeId, storeName)
+
+            res.status(201).json({
+                status: 'success',
+                data: result,
+                message: "閉店処理が正常に終了しました"
+            })
+        } catch (error) {
+            console.error("閉店処理エラー", error)
+            res.status(500).json({
+                status: 'error',
+                message: error instanceof Error ? error.message : '閉店処理中に予期せぬエラーが発生しました。'
             })
         }
     }
