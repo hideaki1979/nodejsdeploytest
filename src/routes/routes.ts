@@ -54,6 +54,10 @@ router.put('/stores/:id', storeValidationRules, (req: Request, res: Response) =>
     storeController.updateStore(req, res)
 })
 
+router.patch('/stores/:id/close', (req: Request, res: Response) => {
+    storeController.storeClose(req, res)
+})
+
 router.get('/maps', (req: Request, res: Response) => {
     storeController.getMapAll(req, res)
 })

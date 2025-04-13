@@ -21,6 +21,7 @@ export interface StoreData {
     is_lot: boolean;
     lot_detail?: string;
     topping_calls?: ToppingCallData[]; // トッピングコール配列を追加
+    is_close?: boolean;
 }
 
 /**
@@ -74,6 +75,7 @@ export interface FormattedToppingOptionNameStoreData {
     is_all_increased: boolean;
     is_lot: boolean;
     lot_detail?: string | null;
+    is_close?: boolean;
 
     // （トッピング・オプション）整形済名称リスト
     preCallFormatted: FormattedToppingOptionNames;
