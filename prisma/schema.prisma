@@ -2,6 +2,7 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"] // PostgreSQL拡張機能のサポートを有効化
+  output          = "../node_modules/.prisma/client" // 出力パスを明示的に指定
 }
 
 // データベース接続設定
@@ -52,7 +53,7 @@ model Map {
 model Image {
   id                  BigInt                  @id @default(autoincrement())
   store_id            BigInt // 関連する店舗ID
-  user_id             BigInt // 将来アカウントで制御を行うため項目追加
+  user_id             String // 将来アカウントで制御を行うため項目追加
   menu_type           Int                     @db.Integer // メニュータイプ
   menu_name           String                  @db.Text // メニュー名
   image_url           String                  @db.Text // 画像URL
@@ -61,6 +62,7 @@ model Image {
   image_topping_calls ImageStoreToppingCall[] // 画像とトッピングコールの関連
 
   store Store @relation(fields: [store_id], references: [id]) // 店舗との関連
+  user  User  @relation(fields: [user_id], references: [id]) // ユーザーとの関連
 
   @@map("images")
 }
@@ -143,6 +145,32 @@ model StoreToppingCall {
   noodle_type NoodleType @relation(fields: [noodle_type_id], references: [id])
 
   @@map("store_topping_calls")
+}
+
+// ユーザー情報
+model User {
+  id           String   @id // Firebase Authenticatonのuidを使用
+  display_name String?
+  email        String?  @unique
+  bio          String?
+  provider     String?
+  created_at   DateTime @default(now()) @db.Timestamp(6)
+  updated_at   DateTime @updatedAt @db.Timestamp(6)
+  Post         Post[]
+  Image        Image[]
+
+  @@map("users")
+}
+
+// 投稿情報
+model Post {
+  id         BigInt   @id @default(autoincrement())
+  content    String?
+  authorId   String
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @updatedAt @db.Timestamp(6)
+
+  author User @relation(fields: [authorId], references: [id])
 }
 
 // テスト用のモデル

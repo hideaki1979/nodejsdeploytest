@@ -13,7 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^6.4.1",
+    "@prisma/client": "^6.6.0",
     "@types/node-geocoder": "^4.2.6",
     "axios": "^1.8.1",
     "cors": "^2.8.5",
@@ -38,7 +38,7 @@
     "eslint": "^9.21.0",
     "globals": "^16.0.0",
     "nodemon": "^3.1.9",
-    "prisma": "^6.4.1",
+    "prisma": "^6.6.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.0"
