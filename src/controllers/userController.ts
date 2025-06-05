@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/userServices";
+import { validationResult } from "express-validator";
 
 export class UserController {
     private userService: UserService
@@ -12,11 +13,12 @@ export class UserController {
         try {
             // console.log('ユーザー情報：', JSON.stringify(req.body, null, 2))
             // Firebaseのuidの検証
-            const firebaseUid = req.body.uid
-            if (!firebaseUid) {
-                res.status(401).json({
+            const errors = validationResult(req)
+            if (!errors.isEmpty()) {
+                res.status(400).json({
                     status: 'error',
-                    message: '認証トークンIDが設定されてません'
+                    message: 'バリデーションエラー',
+                    errors: errors.array()
                 })
                 return
             }
@@ -40,7 +42,7 @@ export class UserController {
         const uid = req.params.uid
         console.log(uid)
         if (!uid) {
-            res.status(401).json({
+            res.status(400).json({
                 status: 'error',
                 message: '認証トークンIDが設定されてません'
             })
@@ -48,6 +50,14 @@ export class UserController {
         }
 
         const result = await this.userService.getIdToken(uid)
+        if (!result) {
+            res.status(404).json({
+                status: 'error',
+                message: '該当するユーザーが存在しません。'
+            });
+            return;
+        }
+
         res.status(200).json({
             status: 'success',
             message: 'ユーザー情報が正常に取得されました',

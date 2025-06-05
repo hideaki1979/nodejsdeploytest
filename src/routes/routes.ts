@@ -6,6 +6,7 @@ import { imageValidationRules } from "../middlewares/imageValidation"
 import { ImageController } from "../controllers/imageController"
 import { UserController } from "../controllers/userController"
 import { authenticateUser } from "../middlewares/authMiddleware"
+import { userValidationRules } from "../middlewares/userValidation"
 
 /**
  * Express Routerのインスタンスを作成
@@ -152,11 +153,11 @@ router.get(`/toppings/calloptions`, (req: Request, res: Response) => {
     toppingController.getFormattedToppingCollOption(req, res)
 })
 
-router.post(`/users`, authenticateUser, (req: Request, res: Response) => {
+router.post(`/users`, authenticateUser, userValidationRules, (req: Request, res: Response) => {
     userController.createUser(req, res)
 })
 
-router.get('/users/:uid', (req: Request, res: Response) => {
+router.get('/users/:uid', authenticateUser, (req: Request, res: Response) => {
     userController.getUserByUid(req, res)
 })
 
