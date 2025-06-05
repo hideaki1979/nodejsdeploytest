@@ -4,4 +4,5 @@ export interface User {
     email: string;
     displayName: string;
     authProvider?: string;
+    bio?: string;
 }

@@ -14,4 +14,13 @@ export class UserService {
         })
         return user
     }
+
+    async getIdToken(uid: string) {
+        const user = await prisma.user.findUnique({
+            where: {
+                id: uid
+            }
+        })
+        return user
+    }
 }

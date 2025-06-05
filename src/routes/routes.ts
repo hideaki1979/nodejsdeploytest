@@ -156,4 +156,8 @@ router.post(`/users`, authenticateUser, (req: Request, res: Response) => {
     userController.createUser(req, res)
 })
 
+router.get('/users/:uid', (req: Request, res: Response) => {
+    userController.getUserByUid(req, res)
+})
+
 export default router

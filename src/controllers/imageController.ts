@@ -67,6 +67,7 @@ export class ImageController {
 
             // サービスクラスから店舗単位の画像情報を取得する。
             const result = await this.imageService.getImageByStoreId(storeId)
+            // console.log("店舗画像リスト：", JSON.stringify(result, null, 2))
 
             // 正常終了レスポンスをリターン
             res.status(200).json({
