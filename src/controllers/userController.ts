@@ -40,7 +40,6 @@ export class UserController {
     async getUserByUid(req: Request, res: Response) {
         // Firebaseのuidの検証
         const uid = req.params.uid
-        console.log(uid)
         if (!uid) {
             res.status(400).json({
                 status: 'error',
