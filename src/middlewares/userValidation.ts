@@ -19,7 +19,7 @@ export const userValidationRules = [
 
     body('authProvider')
         .optional()
-        .isIn(['google', 'facebook', 'twitter', 'apple', 'email']).withMessage('サポートされていない認証プロバイダーです')
+        .isIn(['google', 'facebook', 'twitter', 'github', 'email']).withMessage('サポートされていない認証プロバイダーです')
         .trim(), // サニタイズ: 前後の空白削除
 
     body('bio')
