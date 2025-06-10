@@ -144,7 +144,7 @@ export class ImageService {
                 storeImageToppingOptions.push({
                     id: Number(image.id),
                     store_id: Number(image.store_id),
-                    user_id: Number(image.user_id),
+                    user_id: image.user_id,
                     menu_type: image.menu_type,
                     menu_name: image.menu_name,
                     image_url: image.image_url,
