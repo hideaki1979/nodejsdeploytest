@@ -56,7 +56,7 @@ export class ImageService {
                 const image = await tx.image.create({
                     data: {
                         store_id: BigInt(data.store_id),
-                        user_id: "1",  // 暫定対応で1固定
+                        user_id: data.user_id,
                         menu_type: data.menu_type,
                         menu_name: data.menu_name,
                         image_url: publicUrl

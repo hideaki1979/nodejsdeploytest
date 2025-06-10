@@ -9,6 +9,10 @@ export const imageValidationRules = [
         .notEmpty().withMessage('店舗IDは必須です')
         .isInt().withMessage('店舗IDは整数で指定してください'),
 
+    body('user_id')
+        .notEmpty().withMessage('ユーザーIDは必須です')
+        .isString().withMessage('ユーザーIDは文字列で指定してください'),
+
     body('menu_type')
         .notEmpty().withMessage('メニュータイプは必須です')
         .isInt().withMessage('メニュータイプは整数で指定してください'),
