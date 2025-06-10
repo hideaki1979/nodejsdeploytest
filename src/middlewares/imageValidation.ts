@@ -11,7 +11,9 @@ export const imageValidationRules = [
 
     body('user_id')
         .notEmpty().withMessage('ユーザーIDは必須です')
-        .isString().withMessage('ユーザーIDは文字列で指定してください'),
+        .isString().withMessage('ユーザーIDは文字列で指定してください')
+        .isLength({ min: 28, max: 28 }).withMessage('ユーザーIDは28文字である必要があります')
+        .matches(/^[a-zA-Z0-9]+$/).withMessage('ユーザーIDは英数字のみが許可されています'),
 
     body('menu_type')
         .notEmpty().withMessage('メニュータイプは必須です')
