@@ -1,10 +1,10 @@
-import { body } from "express-validator"
+import { body, param } from "express-validator"
 
 /**
  * 画像アップロードのバリデーションルール
  * リクエストの内容を検証し、適切なエラーメッセージを設定
  */
-export const imageValidationRules = [
+export const imageUploadValidationRules = [
     body('store_id')
         .notEmpty().withMessage('店舗IDは必須です')
         .isInt().withMessage('店舗IDは整数で指定してください'),
@@ -46,4 +46,17 @@ export const imageValidationRules = [
         .if(body('topping_selections').exists())
         .notEmpty().withMessage('コールオプションIDは必須です')
         .isInt().withMessage('コールオプションIDは整数で指定してください')
+]
+
+/**
+ * 画像アップロードのバリデーションルール
+ * リクエストの内容を検証し、適切なエラーメッセージを設定
+ */
+export const imageGetValidationRules = [
+    param('storeId')
+        .notEmpty().withMessage('店舗IDは必須です')
+        .isInt().withMessage('店舗IDは整数で指定してください'),
+    param('imageId')
+        .notEmpty().withMessage('画像IDは必須です')
+        .isInt().withMessage('画像IDは整数で指定してください')
 ]

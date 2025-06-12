@@ -87,4 +87,49 @@ export class ImageController {
             })
         }
     }
+
+    async getImageByImageId(req: Request, res: Response): Promise<void> {
+        // バリデーションエラーの確認
+        const errors = validationResult(req)
+
+        // バリデーションエラーがある場合はエラーレスポンスを返す
+        if (!errors.isEmpty) {
+            res.status(400).json({
+                status: 'error',
+                message: 'バリデーションエラー',
+                errors: errors.array()
+            })
+            return
+        }
+
+        // パラメータから店舗IDと画像IDを取得
+        const storeId = req.params.storeId
+        const imageId = req.params.imageId
+
+        try {
+            // サービスクラスから画像IDを条件に画像情報・画像トッピング情報を取得する。
+            const result = await this.imageService.getImageByImageId(storeId, imageId)
+            // 正常終了でリターン
+            res.status(200).json({
+                status: 'success',
+                message: '画像情報を正常取得しました',
+                data: result
+            })
+        } catch (error) {
+            // エラーログ出力
+            console.error(`画像情報取得エラー (storeId: ${storeId}, imageId: ${imageId}):`, error)
+            // サービスからスローされたエラーメッセージに基づいてステータスコードを決定
+            if (error instanceof Error && error.message === '指定された画像情報が存在しません') {
+                res.status(404).json({
+                    status: 'error',
+                    message: error.message
+                })
+            } else {
+                res.status(500).json({
+                    status: 'error',
+                    message: error instanceof Error ? error.message : '画像情報の取得中に予期せぬエラーが発生しました'
+                })
+            }
+        }
+    }
 }
