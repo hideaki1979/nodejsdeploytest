@@ -1,5 +1,5 @@
 import prisma from "../prismaClient";
-import { StoreImageDownloadData, StoreImageUploadData } from "../types/image";
+import { StoreImageDownloadData, StoreImageEditData, StoreImageUploadData } from "../types/image";
 import { v4 as uuidv4 } from 'uuid'
 import { bucket } from "../config/firebase";
 
@@ -160,6 +160,64 @@ export class ImageService {
             throw error instanceof Error
                 ? error
                 : new Error('店舗の画像情報取得に失敗しました')
+        }
+    }
+
+    async getImageByImageId(storeId: string | number, imageId: string | number): Promise<StoreImageEditData> {
+        try {
+            // パラメータをBigIntに変換
+            const storeBigInt = BigInt(storeId)
+            const imageBigInt = BigInt(imageId)
+
+            // 画像情報を取得
+            const image = await prisma.image.findFirst({
+                where: {
+                    id: imageBigInt,
+                    store_id: storeBigInt
+                },
+                include: {
+                    image_topping_calls: {
+                        include: {
+                            store_topping_call: {
+                                include: {
+                                    topping: true,
+                                    call_option: true
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+
+            // console.log(JSON.stringify(image, null, 2))
+
+            if (!image) {
+                throw new Error('指定された画像情報が存在しません')
+            }
+
+            // トッピング選択情報を整形
+            const toppingSelections = image.image_topping_calls.map(call => ({
+                topping_id: String(call.topping_id),
+                call_option_id: String(call.store_topping_call.call_option_id),
+                store_topping_call_id: String(call.store_topping_call_id)
+            }))
+            // StoreImageEditData型で返却
+            const editData: StoreImageEditData = {
+                id: String(image.id),
+                store_id: String(image.store_id),
+                user_id: image.user_id,
+                menu_type: image.menu_type,
+                menu_name: image.menu_name,
+                image_url: image.image_url,
+                topping_selections: toppingSelections
+            }
+            // console.log(JSON.stringify(editData, null, 2))
+            return editData
+        } catch (error) {
+            console.error('画像情報取得エラー:', error)
+            throw error instanceof Error
+                ? error
+                : new Error('画像情報の取得に失敗しました')
         }
     }
 

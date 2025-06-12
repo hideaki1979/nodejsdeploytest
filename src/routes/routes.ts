@@ -135,13 +135,17 @@ router.post('/stores/:id/images', imageValidationRules, (req: Request, res: Resp
 })
 
 /**
- * 店舗画像取得エンドポイント
+ * 店舗画像一覧取得エンドポイント
  * 指定された店舗の全ての画像を取得する
  * @param {string} req.params.id - 対象店舗ID
  * @returns {Array<object>} 画像情報の配列とステータス情報
  */
 router.get(`/stores/:id/images`, (req: Request, res: Response) => {
     imageController.getStoreImages(req, res)
+})
+
+router.get(`/stores/:storeId/images/:imageId`, (req: Request, res: Response) => {
+    imageController.getImageByImageId(req, res)
 })
 
 /**

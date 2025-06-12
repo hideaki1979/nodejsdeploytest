@@ -87,4 +87,29 @@ export class ImageController {
             })
         }
     }
+
+    async getImageByImageId(req: Request, res: Response): Promise<void> {
+        // パラメータから店舗IDと画像IDを取得
+        const storeId = req.params.storeId
+        const imageId = req.params.imageId
+
+        // パラメータ検証
+        if (!storeId || !imageId) {
+            res.status(400).json({
+                status: 'error',
+                message: 'パラメータ不正（店舗ID、画像ID）'
+            })
+            return
+        }
+
+        // サービスクラスから画像IDを条件に画像情報・画像トッピング情報を取得する。
+        const result = await this.imageService.getImageByImageId(storeId, imageId)
+
+        // 正常終了でリターン
+        res.status(200).json({
+            status: 'success',
+            message: '画像情報を正常取得しました',
+            data: result
+        })
+    }
 }
