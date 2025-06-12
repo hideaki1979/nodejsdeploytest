@@ -114,7 +114,6 @@ export class StoreController {
             res.status(500).json({
                 status: 'error',
                 message: error instanceof Error ? error.message : '店舗情報の取得中に予期せぬエラーが発生しました'
-
             })
         }
     }

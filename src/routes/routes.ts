@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express"
 import { storeValidationRules } from "../middlewares/validation"
 import { StoreController } from "../controllers/storeController"
 import { ToppingController } from "../controllers/toppingController"
-import { imageValidationRules } from "../middlewares/imageValidation"
+import { imageGetValidationRules, imageUploadValidationRules } from "../middlewares/imageValidation"
 import { ImageController } from "../controllers/imageController"
 import { UserController } from "../controllers/userController"
 import { authenticateUser } from "../middlewares/authMiddleware"
@@ -130,7 +130,7 @@ router.get('/stores/:id/toppingcalls', (req: Request, res: Response) => {
  * @param {File} req.file - アップロードする画像ファイル
  * @returns {object} アップロード結果とステータス情報
  */
-router.post('/stores/:id/images', imageValidationRules, (req: Request, res: Response) => {
+router.post('/stores/:id/images', imageUploadValidationRules, (req: Request, res: Response) => {
     imageController.uploadStoreImage(req, res)
 })
 
@@ -140,10 +140,17 @@ router.post('/stores/:id/images', imageValidationRules, (req: Request, res: Resp
  * @param {string} req.params.id - 対象店舗ID
  * @returns {Array<object>} 画像情報の配列とステータス情報
  */
-router.get(`/stores/:id/images`, (req: Request, res: Response) => {
+router.get(`/stores/:id/images`, imageGetValidationRules, (req: Request, res: Response) => {
     imageController.getStoreImages(req, res)
 })
 
+/**
+ * 画像情報取得エンドポイント（店舗ID＋画像ID指定）
+ * 指定された店舗IDと画像IDに一致する画像情報を1件取得する
+ * @param {string} req.params.storeId - 対象店舗ID
+ * @param {string} req.params.imageId - 対象画像ID
+ * @returns {object} 画像情報とステータス情報（成功時）、またはエラー情報（失敗時）
+ */
 router.get(`/stores/:storeId/images/:imageId`, (req: Request, res: Response) => {
     imageController.getImageByImageId(req, res)
 })
