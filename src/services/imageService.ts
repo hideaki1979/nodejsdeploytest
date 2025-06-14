@@ -262,7 +262,7 @@ export class ImageService {
                         metadata: {
                             contentType,
                             metadata: {
-                                storeId: String(data.store_id)
+                                storeId: String(storeId)
                             }
                         }
                     })

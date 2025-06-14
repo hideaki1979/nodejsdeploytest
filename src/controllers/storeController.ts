@@ -68,7 +68,9 @@ export class StoreController {
                 status: 'error',
                 errors: errors.array()
             })
+            return
         }
+
         try {
 
             const storeId = Number(req.params.id)
