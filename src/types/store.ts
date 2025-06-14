@@ -1,4 +1,6 @@
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "./toppingCallOption";
+import { ValidationError } from "express-validator";
+import { Store, Map, StoreToppingCall, Prisma } from "@prisma/client";
 
 /**
  * 店舗データの型定義
@@ -85,3 +87,98 @@ export interface FormattedToppingOptionNameStoreData {
     preCallFormattedIds: FormattedToppingOptionIds;
     postCallFormattedIds: FormattedToppingOptionIds;
 }
+
+// =============================================================================
+// Service Return Types (Prismaの型を活用)
+// =============================================================================
+
+// storeService.createStore の戻り値型
+export interface StoreCreateServiceResult {
+    store: Store;
+    map: Map;
+    storeToppingCalls: StoreToppingCall[];
+}
+
+// storeService.updateStore の戻り値型
+export interface StoreUpdateServiceResult {
+    store: Store;
+    map: Map;
+    storeToppingCalls: StoreToppingCall[];
+}
+
+// storeService.getStoreById の戻り値型
+export type StoreByIdServiceResult = FormattedToppingOptionNameStoreData;
+
+// storeService.getMapAll の戻り値型
+export interface MapWithStoreInfo {
+    id: bigint;
+    latitude: Prisma.Decimal; // PrismaのDecimal型
+    longitude: Prisma.Decimal; // PrismaのDecimal型
+    store: {
+        id: bigint;
+        store_name: string;
+        branch_name: string | null;
+        address: string;
+        is_close: boolean;
+    };
+}
+
+export type MapsAllServiceResult = MapWithStoreInfo[];
+
+// storeService.getStoresAll の戻り値型
+export interface StoreBasicInfo {
+    id: bigint;
+    store_name: string;
+    branch_name: string | null;
+}
+
+export type StoresAllServiceResult = StoreBasicInfo[];
+
+// storeService.getStoreToppingCalls の戻り値型
+export interface StoreToppingCallsServiceResult {
+    id: number;
+    store_name: string;
+    branch_name: string | null;
+    formattedToppingOptions: [number, {
+        toppingId: number;
+        toppingName: string;
+        options: {
+            optionId: number;
+            optionName: string;
+            storeToppingCallId?: number;
+        }[];
+    }][];
+}
+
+// storeService.storeClose の戻り値型
+export type StoreCloseServiceResult = Store;
+
+// =============================================================================
+// Controller Response Types (APIレスポンス用)
+// =============================================================================
+
+// 成功レスポンスの基本型
+interface BaseSuccessResponse {
+    status: 'success';
+    message: string;
+}
+
+// エラーレスポンスの基本型
+interface BaseErrorResponse {
+    status: 'error';
+    message: string;
+    errors?: ValidationError[];
+}
+
+// storeController.createStore のレスポンス型
+export interface StoreCreateControllerResponse extends BaseSuccessResponse {
+    data: StoreCreateServiceResult;
+}
+
+// storeController.updateStore のレスポンス型
+export interface StoreUpdateControllerResponse extends BaseSuccessResponse {
+    data: StoreUpdateServiceResult;
+}
+
+// 店舗関連のエラーレスポンス型
+export type StoreErrorResponse = BaseErrorResponse;
