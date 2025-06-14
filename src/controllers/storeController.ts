@@ -26,7 +26,6 @@ export class StoreController {
    */
     async createStore(req: Request, res: Response): Promise<void> {
         try {
-            // console.log(req.body)
             // バリデーションエラーの確認
             const errors = validationResult(req)
             // バリデーションエラーの場合はエラーで返す
@@ -60,17 +59,17 @@ export class StoreController {
      * @param res レスポンスオブジェクト
      */
     async updateStore(req: Request, res: Response): Promise<void> {
-        try {
-            // バリデーションエラーの確認
-            const errors = validationResult(req)
+        // バリデーションエラーの確認
+        const errors = validationResult(req)
 
-            if (!errors.isEmpty()) {
-                console.error("バリデーションエラー")
-                res.status(400).json({
-                    status: 'error',
-                    errors: errors.array()
-                })
-            }
+        if (!errors.isEmpty()) {
+            console.error("バリデーションエラー")
+            res.status(400).json({
+                status: 'error',
+                errors: errors.array()
+            })
+        }
+        try {
 
             const storeId = Number(req.params.id)
             const result = await this.storeService.updateStore(storeId, req.body)

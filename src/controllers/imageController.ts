@@ -64,7 +64,6 @@ export class ImageController {
     async getStoreImages(req: Request, res: Response): Promise<void> {
         try {
             const storeId = Number(req.params.id)
-
             // サービスクラスから店舗単位の画像情報を取得する。
             const result = await this.imageService.getImageByStoreId(storeId)
             // console.log("店舗画像リスト：", JSON.stringify(result, null, 2))
@@ -131,5 +130,61 @@ export class ImageController {
                 })
             }
         }
+    }
+
+    async updateStoreImage(req: Request, res: Response) {
+        // バリデーションエラーの確認
+        const errors = validationResult(req)
+
+        // バリデーションエラーがある場合はエラーレスポンスを返す
+        if (!errors.isEmpty()) {
+            res.status(400).json({
+                status: 'error',
+                message: '画像更新のバリデーションエラーが発生しました',
+                errors: errors.array()
+            })
+            return
+        }
+
+        try {
+            // パラメータから店舗IDと画像IDを取得
+            const storeId = req.params.storeId
+            const imageId = req.params.imageId
+
+            // リクエストボディから画像更新データを取得する
+            const updateData: StoreImageUploadData = req.body
+
+            // サービスクラスから画像IDを条件に画像情報・画像トッピング情報を取得する。
+            const result = await this.imageService.updateStoreImageService(storeId, imageId, updateData)
+
+            res.status(200).json({
+                status: 'success',
+                message: '画像情報が正常に更新されました',
+                data: {
+                    imageId: result.image.id.toString(),
+                    imageUrl: result.image.image_url,
+                    imageUpdated: result.imageUpdated
+                }
+            })
+        } catch (error) {
+            // エラーをログに記録し、エラーレスポンスを返す
+            console.error('画像情報更新処理エラー:', error)
+
+            // サービスからスローされたエラーメッセージに基づいてステータスコードを決定
+            if (error instanceof Error && error.message === '指定された画像情報が存在しません') {
+                res.status(404).json({
+                    status: 'error',
+                    message: error.message
+                })
+            } else {
+                res.status(500).json({
+                    status: 'error',
+                    message: error instanceof Error
+                        ? error.message
+                        : '画像情報更新中に予期せぬエラーが発生しました'
+                })
+            }
+        }
+
     }
 }

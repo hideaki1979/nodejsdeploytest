@@ -137,8 +137,6 @@ export class ImageService {
                     call_option_name: call.store_topping_call.call_option.call_option_name
                 }))
 
-                // console.log("画像別トッピングコールTBL情報：", JSON.stringify(toppingCalls, null, 2))
-                // console.log("データ整形後の画像トッピングコール情報：", formattedToppingCalls)
 
                 //  StoreImageDownloadData型で格納する。
                 storeImageToppingOptions.push({
@@ -152,7 +150,6 @@ export class ImageService {
 
                 })
             }
-            // console.log("画像情報：", storeImageToppingOptions)
             return storeImageToppingOptions
 
         } catch (error) {
@@ -189,8 +186,6 @@ export class ImageService {
                 }
             })
 
-            // console.log(JSON.stringify(image, null, 2))
-
             if (!image) {
                 throw new Error('指定された画像情報が存在しません')
             }
@@ -211,13 +206,158 @@ export class ImageService {
                 image_url: image.image_url,
                 topping_selections: toppingSelections
             }
-            // console.log(JSON.stringify(editData, null, 2))
             return editData
         } catch (error) {
             console.error('画像情報取得エラー:', error)
             throw error instanceof Error
                 ? error
                 : new Error('画像情報の取得に失敗しました')
+        }
+    }
+
+    async updateStoreImageService(storeId: string | number, imageId: string | number, data: StoreImageUploadData) {
+        try {
+            return await prisma.$transaction(async (tx) => {
+                // パラメータをBigIntに変換
+                const storeBigInt = BigInt(storeId)
+                const imageBigInt = BigInt(imageId)
+
+                // 現在の画像情報を取得（旧画像URL取得のため）
+                const currentImage = await tx.image.findFirst({
+                    where: {
+                        id: imageBigInt,
+                        store_id: storeBigInt
+                    }
+                })
+
+                if (!currentImage) {
+                    throw new Error('指定された画像情報が存在しません')
+                }
+
+                let newImageUrl = currentImage.image_url    // デフォルトは現在のURL
+
+                // image_base64が提供された場合のFirebase Storage処理
+                if (data.image_base64) {
+                    // Base64画像データをバッファに変換
+                    const matches = data.image_base64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
+                    if (!matches || matches.length !== 3) {
+                        throw new Error('無効な画像データ形式です')
+                    }
+
+                    const imageBuffer = Buffer.from(matches[2], 'base64')
+                    const contentType = matches[1]
+
+                    // MIMEタイプから拡張子を取得
+                    const fileExtension = this.getFileExtensionFromMimeType(contentType)
+
+                    // 新しいファイルパスの生成（UUID + タイムスタンプで一意性を確保）
+                    const timestamp = Date.now()
+                    const fileName = `stores/${data.store_id}/${uuidv4()}_${timestamp}${fileExtension}`
+
+                    // FireBase Storageに新しい画像をアップロード
+                    const file = bucket.file(fileName)
+
+                    // ファイルを書き込む
+                    await file.save(imageBuffer, {
+                        metadata: {
+                            contentType,
+                            metadata: {
+                                storeId: String(data.store_id)
+                            }
+                        }
+                    })
+                    // ファイルの公開URL取得のためのアクセス設定
+                    await file.makePublic()
+
+                    // 新しい公開URLの取得
+                    newImageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`
+
+                    // 旧画像をFirebase Storageから削除
+                    try {
+                        await this.deleteImageFromStorage(currentImage.image_url)
+                    } catch (deleteError) {
+                        // 旧画像の削除に失敗してもメイン処理は継続する
+                        console.warn('旧画像の削除に失敗しました:', deleteError)
+                    }
+                }
+
+                // imagesテーブルの更新
+                const updatedImage = await tx.image.update({
+                    where: {
+                        id: imageBigInt
+                    },
+                    data: {
+                        menu_type: data.menu_type,
+                        menu_name: data.menu_name,
+                        image_url: newImageUrl
+                    }
+                })
+
+                // 既存のimage_store_topping_callsを削除
+                await tx.imageStoreToppingCall.deleteMany({
+                    where: {
+                        image_id: imageBigInt
+                    }
+                })
+
+                // 新しいトッピング選択を挿入
+                const imageStoreToppingCalls = []
+                if (data.topping_selections && data.topping_selections.length > 0) {
+                    for (const selection of data.topping_selections) {
+                        const imageToppingCall = await tx.imageStoreToppingCall.create({
+                            data: {
+                                image_id: imageBigInt,
+                                topping_id: BigInt(selection.topping_id),
+                                store_topping_call_id: BigInt(selection.store_topping_call_id)
+                            }
+                        })
+                        imageStoreToppingCalls.push(imageToppingCall)
+                    }
+                }
+
+                return {
+                    image: updatedImage,
+                    imageStoreToppingCalls,
+                    imageUpdated: data.image_base64 ? true : false
+                }
+            })
+
+        } catch (error) {
+            console.error('画像更新エラー:', error);
+            throw error instanceof Error
+                ? error
+                : new Error('画像の更新に失敗しました');
+        }
+    }
+
+    /**
+     * Firebase StorageからURLを基に画像ファイルを削除する
+     * @param imageUrl 削除対象の画像URL
+     */
+    private async deleteImageFromStorage(imageUrl: string): Promise<void> {
+        try {
+            // URLからファイルパスを抽出
+            const urlPattern = new RegExp(`https://storage\\.googleapis\\.com/${bucket.name}/(.+)`)
+            const match = imageUrl.match(urlPattern)
+
+            if (!match || !match[1]) {
+                throw new Error('無効な画像URLです')
+            }
+
+            const filePath = decodeURIComponent(match[1])
+            const file = bucket.file(filePath)
+
+            // ファイルが存在するかチェック
+            const [exists] = await file.exists()
+
+            if (exists) {
+                await file.delete()
+            } else {
+                console.warn(`削除対象のファイルが存在しません: ${filePath}`)
+            }
+        } catch (error) {
+            console.error(`Firebase Storage画像削除エラー：`, error)
+            throw error
         }
     }
 

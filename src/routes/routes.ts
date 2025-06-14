@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express"
 import { storeValidationRules } from "../middlewares/validation"
 import { StoreController } from "../controllers/storeController"
 import { ToppingController } from "../controllers/toppingController"
-import { imageGetValidationRules, imageUploadValidationRules } from "../middlewares/imageValidation"
+import { imageGetValidationRules, imageUpdateValidationRules, imageUploadValidationRules } from "../middlewares/imageValidation"
 import { ImageController } from "../controllers/imageController"
 import { UserController } from "../controllers/userController"
 import { authenticateUser } from "../middlewares/authMiddleware"
@@ -153,6 +153,11 @@ router.get(`/stores/:id/images`, imageGetValidationRules, (req: Request, res: Re
  */
 router.get(`/stores/:storeId/images/:imageId`, (req: Request, res: Response) => {
     imageController.getImageByImageId(req, res)
+})
+
+
+router.put(`/stores/:storeId/images/:imageId`, imageUpdateValidationRules, (req: Request, res: Response) => {
+    imageController.updateStoreImage(req, res)
 })
 
 /**
