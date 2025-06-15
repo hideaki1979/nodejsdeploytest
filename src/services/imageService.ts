@@ -329,7 +329,7 @@ export class ImageService {
             // 画像存在確認（共通処理）
             const currentImage = await prisma.$transaction(async (tx) => {
                 // 画像所有者チェック
-                await this.validateImageOwnership(tx, imageBigInt, userId)
+                await this.validateImageOwnership(tx, storeBigInt, imageBigInt, userId)
                 // 画像存在確認（共通処理）
                 return await this.validateImageExists(tx, storeBigInt, imageBigInt)
             })
@@ -441,11 +441,12 @@ export class ImageService {
 
     private async validateImageOwnership(
         tx: Prisma.TransactionClient,
+        storeId: bigint,
         imageId: bigint,
         userId: string
     ): Promise<void> {
-        const image = await tx.image.findUnique({
-            where: { id: imageId },
+        const image = await tx.image.findFirst({
+            where: { id: imageId, store_id: storeId },
             select: { user_id: true }
         })
 
