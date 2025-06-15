@@ -160,6 +160,10 @@ router.put(`/stores/:storeId/images/:imageId`, imageUpdateValidationRules, (req:
     imageController.updateStoreImage(req, res)
 })
 
+router.delete(`/stores/:storeId/images/:imageId`, imageGetValidationRules, (req: Request, res: Response) => {
+    imageController.deleteStoreImage(req, res)
+})
+
 /**
  * フォーマット済みトッピングコールオプション取得エンドポイント
  * フロントエンド表示用にフォーマットされたトッピングとコールオプションの関連情報を取得する

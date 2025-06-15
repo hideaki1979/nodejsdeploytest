@@ -69,6 +69,12 @@ export interface ImageUpdateServiceResult {
     imageUpdated: boolean;
 }
 
+// imageService.deleteStoreImageService の戻り値型
+export interface ImageDeleteServiceResult {
+    image: Image;
+    deleted: boolean;
+}
+
 // =============================================================================
 // Controller Response Types (APIレスポンス用)
 // =============================================================================

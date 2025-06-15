@@ -2,6 +2,7 @@ import prisma from "../prismaClient";
 import { StoreImageDownloadData, StoreImageEditData, StoreImageUploadData } from "../types/image";
 import { v4 as uuidv4 } from 'uuid'
 import { bucket } from "../config/firebase";
+import { Image, Prisma } from "@prisma/client";
 
 export class ImageService {
     /**
@@ -223,16 +224,7 @@ export class ImageService {
                 const imageBigInt = BigInt(imageId)
 
                 // 現在の画像情報を取得（旧画像URL取得のため）
-                const currentImage = await tx.image.findFirst({
-                    where: {
-                        id: imageBigInt,
-                        store_id: storeBigInt
-                    }
-                })
-
-                if (!currentImage) {
-                    throw new Error('指定された画像情報が存在しません')
-                }
+                const currentImage = await this.validateImageExists(tx, storeBigInt, imageBigInt)
 
                 let newImageUrl = currentImage.image_url    // デフォルトは現在のURL
 
@@ -272,7 +264,7 @@ export class ImageService {
                     // 新しい公開URLの取得
                     newImageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`
 
-                    // 旧画像をFirebase Storageから削除
+                    // 旧画像をFirebase Storageから削除（共通処理）
                     try {
                         await this.deleteImageFromStorage(currentImage.image_url)
                     } catch (deleteError) {
@@ -294,11 +286,7 @@ export class ImageService {
                 })
 
                 // 既存のimage_store_topping_callsを削除
-                await tx.imageStoreToppingCall.deleteMany({
-                    where: {
-                        image_id: imageBigInt
-                    }
-                })
+                await this.deleteImageToppingCalls(tx, imageBigInt)
 
                 // 新しいトッピング選択を挿入
                 const imageStoreToppingCalls = []
@@ -328,6 +316,97 @@ export class ImageService {
                 ? error
                 : new Error('画像の更新に失敗しました');
         }
+    }
+
+    /**
+     * 画像情報を削除する
+     * 画像ファイル、データベースレコード、関連トッピングコール情報を削除する
+     * @param storeId 店舗ID
+     * @param imageId 画像ID
+     * @returns 削除された画像情報
+     */
+
+    async deleteStoreImageService(storeId: string | number, imageId: string | number) {
+        try {
+            return await prisma.$transaction(async (tx) => {
+                // パラメータをBigIntに変換
+                const storeBigInt = BigInt(storeId)
+                const imageBigInt = BigInt(imageId)
+
+                // 画像存在確認（共通処理）
+                const currentImage = await this.validateImageExists(tx, storeBigInt, imageBigInt)
+
+                // Firebase Storageから画像ファイルを削除（共通処理）
+                try {
+                    await this.deleteImageFromStorage(currentImage.image_url)
+                } catch (deleteError) {
+                    // Firebase Storageの削除に失敗してもメイン処理は継続する
+                    console.warn('Firebase Storage画像削除に失敗しました:', deleteError)
+                }
+
+                // 関連するimage_store_topping_callsを削除（共通処理）
+                await this.deleteImageToppingCalls(tx, imageBigInt)
+
+                // imagesテーブルから画像情報を削除
+                const deleteImage = await tx.image.delete({
+                    where: {
+                        id: imageBigInt
+                    }
+                })
+
+                return {
+                    image: deleteImage,
+                    deleted: true
+                }
+            })
+        } catch (error) {
+            console.error('画像削除エラー:', error);
+            throw error instanceof Error
+                ? error
+                : new Error('画像の削除に失敗しました');
+        }
+    }
+
+    // =============================================================================
+    // 共通処理メソッド
+    // =============================================================================
+
+    /**
+     * 画像の存在確認を行う（共通処理）
+     * @param tx Prismaトランザクション
+     * @param storeId 店舗ID（BigInt）
+     * @param imageId 画像ID（BigInt）
+     * @returns 画像情報
+     * @throws Error 画像が存在しない場合
+     */
+
+    private async validateImageExists(tx: Prisma.TransactionClient, storeId: bigint, imageId: bigint): Promise<Image> {
+        const image = await tx.image.findFirst({
+            where: {
+                id: imageId,
+                store_id: storeId
+            }
+        })
+
+        if (!image) {
+            throw new Error('指定された画像情報が存在しません')
+        }
+
+        return image
+    }
+
+    /**
+    * 画像に関連するトッピングコール情報を削除する（共通処理）
+    * @param tx Prismaトランザクション
+    * @param imageId 画像ID（BigInt）
+    */
+
+    private async deleteImageToppingCalls(tx: Prisma.TransactionClient, imageId: bigint): Promise<void> {
+        await tx.imageStoreToppingCall.deleteMany({
+            where: {
+                image_id: imageId
+            }
+        })
     }
 
     /**

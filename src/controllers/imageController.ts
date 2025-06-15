@@ -185,6 +185,56 @@ export class ImageController {
                 })
             }
         }
+    }
 
+    async deleteStoreImage(req: Request, res: Response) {
+        // バリデーションエラーの確認
+        const errors = validationResult(req)
+
+        // バリデーションエラーがある場合はエラーレスポンスを返す
+        if (!errors.isEmpty()) {
+            res.status(400).json({
+                status: 'error',
+                message: '画像削除のバリデーションエラーが発生しました',
+                errors: errors.array()
+            })
+            return
+        }
+
+        try {
+            // パラメータから店舗IDと画像IDを取得
+            const storeId = req.params.storeId
+            const imageId = req.params.imageId
+
+            // サービスクラスから画像削除処理を実行する
+            const result = await this.imageService.deleteStoreImageService(storeId, imageId)
+
+            res.status(200).json({
+                status: 'success',
+                message: '画像が正常に削除されました',
+                data: {
+                    imageId: result.image.id.toString(),
+                    deleted: result.deleted
+                }
+            })
+        } catch (error) {
+            // エラーをログに記録し、エラーレスポンスを返す
+            console.error(`画像削除処理エラー：`, error)
+
+            // サービスからスローされたエラーメッセージに基づいてステータスコードを決定
+            if (error instanceof Error && error.message === '指定された画像情報が存在しません') {
+                res.status(404).json({
+                    status: 'error',
+                    message: error.message
+                })
+            } else {
+                res.status(500).json({
+                    status: 'error',
+                    message: error instanceof Error
+                        ? error.message
+                        : '画像削除中に予期せぬエラーが発生しました'
+                })
+            }
+        }
     }
 }
