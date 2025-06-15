@@ -326,39 +326,46 @@ export class ImageService {
      * @returns 削除された画像情報
      */
 
-    async deleteStoreImageService(storeId: string | number, imageId: string | number) {
+    async deleteStoreImageService(storeId: string | number, imageId: string | number, userId: string) {
         try {
-            return await prisma.$transaction(async (tx) => {
-                // パラメータをBigIntに変換
-                const storeBigInt = BigInt(storeId)
-                const imageBigInt = BigInt(imageId)
+            // パラメータをBigIntに変換
+            const storeBigInt = BigInt(storeId)
+            const imageBigInt = BigInt(imageId)
 
+            // 画像存在確認（共通処理）
+            const currentImage = await prisma.$transaction(async (tx) => {
+                // 画像所有者チェック
+                await this.validateImageOwnership(tx, imageBigInt, userId)
                 // 画像存在確認（共通処理）
-                const currentImage = await this.validateImageExists(tx, storeBigInt, imageBigInt)
+                return await this.validateImageExists(tx, storeBigInt, imageBigInt)
+            })
 
-                // Firebase Storageから画像ファイルを削除（共通処理）
-                try {
-                    await this.deleteImageFromStorage(currentImage.image_url)
-                } catch (deleteError) {
-                    // Firebase Storageの削除に失敗してもメイン処理は継続する
-                    console.warn('Firebase Storage画像削除に失敗しました:', deleteError)
-                }
+            // Firebase Storageから画像ファイルを削除（共通処理）
+            try {
+                await this.deleteImageFromStorage(currentImage.image_url)
+            } catch (deleteError) {
+                // Firebase Storageの削除に失敗してもメイン処理は継続する
+                console.warn('Firebase Storage画像削除に失敗しました:', deleteError)
+            }
 
+
+            // imagesテーブルから画像情報を削除
+            const deleteImage = await prisma.$transaction(async (tx) => {
                 // 関連するimage_store_topping_callsを削除（共通処理）
                 await this.deleteImageToppingCalls(tx, imageBigInt)
 
-                // imagesテーブルから画像情報を削除
-                const deleteImage = await tx.image.delete({
+                return await tx.image.delete({
                     where: {
                         id: imageBigInt
                     }
                 })
-
-                return {
-                    image: deleteImage,
-                    deleted: true
-                }
             })
+
+            return {
+                image: deleteImage,
+                deleted: true
+            }
+
         } catch (error) {
             console.error('画像削除エラー:', error);
             throw error instanceof Error
@@ -438,6 +445,20 @@ export class ImageService {
             console.error(`Firebase Storage画像削除エラー：`, error)
             throw error
         }
+    }
+
+    private async validateImageOwnership(
+        tx: Prisma.TransactionClient,
+        imageId: bigint,
+        userId: string
+    ): Promise<void> {
+        const image = await tx.image.findUnique({
+            where: { id: imageId },
+            select: { user_id: true }
+        })
+
+        if (!image) throw new Error('指定された画像情報が存在しません')
+        if (image.user_id !== userId) throw new Error('この画像を削除する権限がありません')
     }
 
     /**

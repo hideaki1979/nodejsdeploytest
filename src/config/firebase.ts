@@ -41,4 +41,4 @@ if (!admin.apps.length) {
 export const bucket = admin.storage().bucket()
 
 // デフォルトでFirebase管理インスタンスをエクスポート
-export default admin;
+export default admin

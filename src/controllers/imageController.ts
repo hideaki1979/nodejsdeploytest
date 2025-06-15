@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ImageService } from "../services/imageService";
 import { validationResult } from "express-validator";
 import { StoreImageUploadData } from "../types/image";
+import { getAuthenticatedUserid } from "../utils/auth";
 
 export class ImageController {
     private imageService: ImageService
@@ -25,7 +26,7 @@ export class ImageController {
             const errors = validationResult(req)
 
             // バリデーションエラーがある場合はエラーレスポンスを返す
-            if (!errors.isEmpty) {
+            if (!errors.isEmpty()) {
                 res.status(400).json({
                     status: 'error',
                     message: 'バリデーションエラー',
@@ -92,7 +93,7 @@ export class ImageController {
         const errors = validationResult(req)
 
         // バリデーションエラーがある場合はエラーレスポンスを返す
-        if (!errors.isEmpty) {
+        if (!errors.isEmpty()) {
             res.status(400).json({
                 status: 'error',
                 message: 'バリデーションエラー',
@@ -188,6 +189,9 @@ export class ImageController {
     }
 
     async deleteStoreImage(req: Request, res: Response) {
+
+        const userId = getAuthenticatedUserid(req)
+
         // バリデーションエラーの確認
         const errors = validationResult(req)
 
@@ -207,7 +211,7 @@ export class ImageController {
             const imageId = req.params.imageId
 
             // サービスクラスから画像削除処理を実行する
-            const result = await this.imageService.deleteStoreImageService(storeId, imageId)
+            const result = await this.imageService.deleteStoreImageService(storeId, imageId, userId)
 
             res.status(200).json({
                 status: 'success',
@@ -222,18 +226,25 @@ export class ImageController {
             console.error(`画像削除処理エラー：`, error)
 
             // サービスからスローされたエラーメッセージに基づいてステータスコードを決定
-            if (error instanceof Error && error.message === '指定された画像情報が存在しません') {
-                res.status(404).json({
-                    status: 'error',
-                    message: error.message
-                })
-            } else {
-                res.status(500).json({
-                    status: 'error',
-                    message: error instanceof Error
-                        ? error.message
-                        : '画像削除中に予期せぬエラーが発生しました'
-                })
+            if (error instanceof Error) {
+                if (error.message === '指定された画像情報が存在しません') {
+                    res.status(404).json({
+                        status: 'error',
+                        message: error.message
+                    })
+                } else if (error.message === 'この画像を削除する権限がありません') {
+                    res.status(403).json({
+                        status: 'error',
+                        message: error.message
+                    })
+                } else {
+                    res.status(500).json({
+                        status: 'error',
+                        message: error instanceof Error
+                            ? error.message
+                            : '画像削除中に予期せぬエラーが発生しました'
+                    })
+                }
             }
         }
     }
