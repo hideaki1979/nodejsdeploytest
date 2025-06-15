@@ -6,9 +6,12 @@
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "outDir": "./dist"
+        "outDir": "./dist",
+        "typeRoots": ["./node_modules/@types", "./src/types"],
+        "types": ["node", "express"]
     },
     "include": [
-        "src"
+        "src/**/*",
+        "src/types/**/*.d.ts"
     ]
 }
