@@ -155,9 +155,7 @@ export class ImageService {
 
         } catch (error) {
             console.error('画像情報取得エラー:', error);
-            throw error instanceof Error
-                ? error
-                : new Error('店舗の画像情報取得に失敗しました')
+            throw new Error('店舗の画像情報取得に失敗しました')
         }
     }
 
@@ -210,9 +208,7 @@ export class ImageService {
             return editData
         } catch (error) {
             console.error('画像情報取得エラー:', error)
-            throw error instanceof Error
-                ? error
-                : new Error('画像情報の取得に失敗しました')
+            throw new Error('画像情報の取得に失敗しました')
         }
     }
 
@@ -312,9 +308,7 @@ export class ImageService {
 
         } catch (error) {
             console.error('画像更新エラー:', error);
-            throw error instanceof Error
-                ? error
-                : new Error('画像の更新に失敗しました');
+            throw new Error('画像の更新に失敗しました');
         }
     }
 
@@ -368,9 +362,7 @@ export class ImageService {
 
         } catch (error) {
             console.error('画像削除エラー:', error);
-            throw error instanceof Error
-                ? error
-                : new Error('画像の削除に失敗しました');
+            throw new Error('画像の削除に失敗しました');
         }
     }
 
