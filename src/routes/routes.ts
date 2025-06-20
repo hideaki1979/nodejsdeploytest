@@ -160,7 +160,7 @@ router.put(`/stores/:storeId/images/:imageId`, imageUpdateValidationRules, (req:
     imageController.updateStoreImage(req, res)
 })
 
-router.delete(`/stores/:storeId/images/:imageId`, imageGetValidationRules, (req: Request, res: Response) => {
+router.delete(`/stores/:storeId/images/:imageId`, authenticateUser, imageGetValidationRules, (req: Request, res: Response) => {
     imageController.deleteStoreImage(req, res)
 })
 
