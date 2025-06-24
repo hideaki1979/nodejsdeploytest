@@ -13,7 +13,12 @@ export class UserController {
         const errors = validationResult(req)
         if (!errors.isEmpty()) {
             // バリデーションエラーはAppErrorを使用して一貫した形式で返す
-            throw new AppError('バリデーションエラー', 400)
+            res.status(400).json({
+                success: false,
+                error: 'バリデーションエラー',
+                errors: errors.array()
+            })
+            return
         }
         const result = await this.userService.createUser(req.body)
         res.status(201).json({
