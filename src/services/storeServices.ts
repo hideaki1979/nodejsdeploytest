@@ -3,15 +3,16 @@ import prisma from "../prismaClient"
 import { GeocodingResult, StoreData, StoreToppingCallFilter } from "../types/store";
 import { GeocodingService } from "./geocodingService"
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "../types/toppingCallOption";
+import { injectable } from "tsyringe";
+import { AppError } from "../middlewares/errorMiddleware";
 
 /**
  * 店舗情報に関するビジネスロジックを提供するサービスクラス
  */
+@injectable()
 export class StoreService {
-    private geoCodingService: GeocodingService;
-    constructor() {
-        this.geoCodingService = new GeocodingService()
-    }
+
+    constructor(private geoCodingService: GeocodingService) { }
     /**
    * 店舗情報とマップ情報を同時に登録する
    * トランザクションを使用してテーブルの整合性を担保する
@@ -204,7 +205,7 @@ export class StoreService {
             }
         })
         if (!store) {
-            throw new Error(`ID: ${storeId} の店舗は見つかりませんでした`)
+            throw new AppError(`ID: ${storeId} の店舗は見つかりませんでした`, 404)
         }
 
         // トッピングコールをコールタイミングで分類
@@ -276,7 +277,6 @@ export class StoreService {
             }
         }
         // 元の店舗情報から店舗別トッピングコール情報を削除して格納する。
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { store_topping_calls: _, ...storeData } = store
 
         // 整形したデータをリターンする。
@@ -390,12 +390,10 @@ export class StoreService {
                 }
             }
         })
-        // console.log("シミュレーション店舗別トッピングコール情報：", preStoreToppingCalls)
         if (!storeToppingCalls) {
             throw new Error(`ID: ${storeId}の店舗は存在しません。`)
         }
 
-        // console.log("storeToppingCalls：", JSON.stringify(storeToppingCalls, null, 2))
 
         // トッピングごとにオプションをグループ化するためのマップを作成
         const toppingOptionMap = new Map<number, {
@@ -438,16 +436,10 @@ export class StoreService {
                     ...(storeToppingCallId !== undefined && { storeToppingCallId })
                 })
             }
-            // console.log("toppingData：", toppingData)
-            // console.log("toppingOptionMap:");
-            // toppingOptionMap.forEach((value, key) => {
-            //     console.log(`Key: ${key}`, value);
-            // });
         }
 
         // Map内のデータを配列に変換して返却
         const formattedToppingOptions = Array.from(toppingOptionMap)
-        // console.log("配列変換後データ：", JSON.stringify(formattedToppingOptions))
 
         // 店舗情報と整形したトッピングオプションを返却
         return {

@@ -14,9 +14,9 @@ import { container } from "tsyringe"
  * アプリケーションのルーティングを管理する
  */
 const router = Router();
-const storeController = new StoreController()
-const toppingController = new ToppingController()
-const imageController = new ImageController()
+const storeController = container.resolve(StoreController)
+const toppingController = container.resolve(ToppingController)
+const imageController = container.resolve(ImageController)
 const userController = container.resolve(UserController)
 
 /**
