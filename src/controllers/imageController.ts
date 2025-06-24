@@ -136,7 +136,7 @@ export class ImageController {
         // バリデーションエラーがある場合はエラーレスポンスを返す
         if (!errors.isEmpty()) {
             res.status(400).json({
-                status: 'error',
+                success: false,
                 message: '画像削除のバリデーションエラーが発生しました',
                 errors: errors.array()
             })
@@ -151,7 +151,7 @@ export class ImageController {
         const result = await this.imageService.deleteStoreImageService(storeId, imageId, userId)
 
         res.status(200).json({
-            status: 'success',
+            success: true,
             message: '画像が正常に削除されました',
             data: {
                 imageId: result.image.id.toString(),

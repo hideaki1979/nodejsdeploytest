@@ -415,7 +415,7 @@ export class ImageService {
         })
 
         if (!image) throw new AppError('指定された画像情報が存在しません', 404)
-        if (image.user_id !== userId) throw new AppError('この画像を削除する権限がありません', 401)
+        if (image.user_id !== userId) throw new AppError('この画像を削除する権限がありません', 403)
     }
 
     /**
