@@ -7,6 +7,7 @@ import { ImageController } from "../controllers/imageController"
 import { UserController } from "../controllers/userController"
 import { authenticateUser } from "../middlewares/authMiddleware"
 import { userValidationRules } from "../middlewares/userValidation"
+import { container } from "tsyringe"
 
 /**
  * Express Routerのインスタンスを作成
@@ -16,7 +17,7 @@ const router = Router();
 const storeController = new StoreController()
 const toppingController = new ToppingController()
 const imageController = new ImageController()
-const userController = new UserController()
+const userController = container.resolve(UserController)
 
 /**
  * ルートエンドポイント

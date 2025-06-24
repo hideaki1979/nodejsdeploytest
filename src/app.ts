@@ -1,9 +1,12 @@
+import 'reflect-metadata'
+import 'express-async-errors'
 import express from 'express'
 import middlewares from './middlewares/middlewares'
 import router from './routes/routes'
 import config from './config/config'
 import { setupBigIntSerialization } from './utils/bigintExtension'
 import './config/firebase'
+import { errorMiddleware } from './middlewares/errorMiddleware'
 
 /**
  * BigInt型のJSONシリアライズをサポートするための拡張を設定
@@ -32,6 +35,13 @@ app.use(...middlewares)
  * アプリケーションのルーティングを設定
  */
 app.use(router)
+
+
+/**
+ * エラーハンドリングミドルウェアの適用
+ * ルーターの後に配置し、アプリケーション全体のエラーを補足
+ */
+app.use(errorMiddleware)
 
 /**
  * サーバーの起動設定

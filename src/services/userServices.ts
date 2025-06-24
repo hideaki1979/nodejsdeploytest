@@ -1,6 +1,8 @@
+import { injectable } from "tsyringe";
 import prisma from "../prismaClient";
 import { User } from "../types/user";
 
+@injectable()
 export class UserService {
     async createUser(data: User) {
         try {
