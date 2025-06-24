@@ -137,10 +137,23 @@ router.get(`/stores/:id/images`, imageGetValidationRules, imageController.getSto
  * @param {string} req.params.imageId - 対象画像ID
  * @returns {object} 画像情報とステータス情報（成功時）、またはエラー情報（失敗時）
  */
-router.get(`/stores/:storeId/images/:imageId`, imageController.getImageByImageId.bind(imageController))
+router.get(`/stores/:storeId/images/:imageId`, imageGetValidationRules, imageController.getImageByImageId.bind(imageController))
 
+/**
+ * 画像情報更新エンドポイント（店舗ID＋画像ID指定）
+ * @param {string} req.params.storeId - 対象店舗ID
+ * @param {string} req.params.imageId - 対象画像ID
+ * @param {object} req.body - 更新する画像データ
+ * @returns {object} 更新結果とステータス情報
+ */
 router.put(`/stores/:storeId/images/:imageId`, imageUpdateValidationRules, imageController.updateStoreImage.bind(imageController))
 
+/**
+ * 店舗画像削除エンドポイント（店舗ID＋画像ID指定）
+ * @param {string} req.params.storeId - 対象店舗ID
+ * @param {string} req.params.imageId - 対象画像ID
+ * @returns {object} 削除結果とステータス情報
+ */
 router.delete(`/stores/:storeId/images/:imageId`, authenticateUser, imageGetValidationRules, imageController.deleteStoreImage.bind(imageController))
 
 /**
@@ -150,8 +163,20 @@ router.delete(`/stores/:storeId/images/:imageId`, authenticateUser, imageGetVali
  */
 router.get(`/toppings/calloptions`, toppingController.getFormattedToppingCollOption.bind(toppingController))
 
+/**
+ * ユーザー作成エンドポイント
+ * 新しいユーザーを作成する
+ * @param {object} req.body - ユーザー情報
+ * @returns {object} 作成されたユーザー情報とステータス情報
+ */
 router.post(`/users`, authenticateUser, userValidationRules, userController.createUser.bind(userController))
 
+/**
+ * ユーザー情報取得エンドポイント
+ * 指定されたUIDのユーザー情報を取得する
+ * @param {string} req.params.uid - 取得対象のユーザーUID
+ * @returns {object} ユーザー情報とステータス情報
+ */
 router.get('/users/:uid', authenticateUser, userController.getUserByUid.bind(userController))
 
 export default router
