@@ -1,8 +1,10 @@
-# JNavi APIサーバー
+# JNavi API サーバー
+
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/hideaki1979/nodejsdeploytest?utm_source=oss&utm_medium=github&utm_campaign=hideaki1979%2Fnodejsdeploytest&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 ## プロジェクト概要
 
-JNavi APIサーバーは、ラーメン店の情報管理、地図表示、メニュー画像管理のためのRESTful APIを提供するバックエンドサーバーです。Node.js、Express、TypeScript、Prisma、PostgreSQLを使用して構築されています。
+JNavi API サーバーは、ラーメン店の情報管理、地図表示、メニュー画像管理のための RESTful API を提供するバックエンドサーバーです。Node.js、Express、TypeScript、Prisma、PostgreSQL を使用して構築されています。
 
 ## 技術スタック
 
@@ -23,20 +25,20 @@ JNavi APIサーバーは、ラーメン店の情報管理、地図表示、メ�
 
 ### 主要エンドポイント
 
-| メソッド | エンドポイント | 説明 |
-|---------|---------------|-----|
-| GET | / | ウェルカムメッセージ |
-| GET | /health | ヘルスチェック |
-| POST | /stores | 店舗情報の登録 |
-| GET | /stores/:id | 店舗情報の取得 |
-| GET | /maps | 全店舗の地図情報取得 |
-| GET | /stores | 全店舗情報一覧の取得 |
-| GET | /stores/:id/toppingcalls | 店舗のトッピングコール情報の取得 |
-| POST | /stores/:id/images | 店舗の画像をアップロード |
-| GET | /stores/:id/images | 店舗の画像情報を取得 |
-| GET | /toppings | トッピング情報の取得 |
-| GET | /calloptions | コールオプション情報の取得 |
-| GET | /toppings/calloptions | トッピングとコールオプションの関連情報を取得 |
+| メソッド | エンドポイント           | 説明                                         |
+| -------- | ------------------------ | -------------------------------------------- |
+| GET      | /                        | ウェルカムメッセージ                         |
+| GET      | /health                  | ヘルスチェック                               |
+| POST     | /stores                  | 店舗情報の登録                               |
+| GET      | /stores/:id              | 店舗情報の取得                               |
+| GET      | /maps                    | 全店舗の地図情報取得                         |
+| GET      | /stores                  | 全店舗情報一覧の取得                         |
+| GET      | /stores/:id/toppingcalls | 店舗のトッピングコール情報の取得             |
+| POST     | /stores/:id/images       | 店舗の画像をアップロード                     |
+| GET      | /stores/:id/images       | 店舗の画像情報を取得                         |
+| GET      | /toppings                | トッピング情報の取得                         |
+| GET      | /calloptions             | コールオプション情報の取得                   |
+| GET      | /toppings/calloptions    | トッピングとコールオプションの関連情報を取得 |
 
 ## 環境構築
 
@@ -82,6 +84,7 @@ JNavi APIサーバーは、ラーメン店の情報管理、地図表示、メ�
    ```
 
 5. サーバーの起動
+
    - 開発モード:
 
      ```bash
@@ -99,19 +102,19 @@ JNavi APIサーバーは、ラーメン店の情報管理、地図表示、メ�
 
 ### 主要テーブル
 
-| テーブル名 | 説明 |
-|------------|------|
-| stores | 店舗情報（名前、住所、営業時間など） |
-| maps | 店舗の地図情報（緯度・経度） |
-| images | メニュー画像情報 |
-| toppings | トッピング種類（チャーシュー、メンマなど） |
-| call_options | コールオプション（マシマシ、カラメなど） |
-| store_topping_calls | 店舗ごとのトッピングコール設定 |
-| image_store_topping_calls | 画像とトッピングコールの関連 |
+| テーブル名                | 説明                                       |
+| ------------------------- | ------------------------------------------ |
+| stores                    | 店舗情報（名前、住所、営業時間など）       |
+| maps                      | 店舗の地図情報（緯度・経度）               |
+| images                    | メニュー画像情報                           |
+| toppings                  | トッピング種類（チャーシュー、メンマなど） |
+| call_options              | コールオプション（マシマシ、カラメなど）   |
+| store_topping_calls       | 店舗ごとのトッピングコール設定             |
+| image_store_topping_calls | 画像とトッピングコールの関連               |
 
 ## Firebase Storage
 
-メニュー画像は Firebase Storage に保存され、公開URLとしてデータベースに記録されます。  
+メニュー画像は Firebase Storage に保存され、公開 URL としてデータベースに記録されます。  
 画像パスは以下の形式で管理されます：
 
 ```plaintext
@@ -122,8 +125,8 @@ stores/{store_id}/{uuid}_{timestamp}.{extension}
 
 - [Visual Studio Code](https://code.visualstudio.com/) - 推奨エディタ
 - [ESLint](https://eslint.org/) - コード品質管理
-- [TypeScript](https://www.typescriptlang.org/) - 型安全なJavaScript
-- [Prisma Studio](https://www.prisma.io/studio) - データベース管理UI
+- [TypeScript](https://www.typescriptlang.org/) - 型安全な JavaScript
+- [Prisma Studio](https://www.prisma.io/studio) - データベース管理 UI
 
 ## ビルドとデプロイ
 
@@ -144,7 +147,7 @@ npm run start:prod
 npm run deploy
 ```
 
-CI/CDパイプラインを使用して、main/masterブランチへのマージ時に自動デプロイが行われます。
+CI/CD パイプラインを使用して、main/master ブランチへのマージ時に自動デプロイが行われます。
 デプロイ先環境の詳細はプロジェクト管理者にお問い合わせください。
 
 ## ライセンス

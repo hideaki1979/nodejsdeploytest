@@ -42,9 +42,7 @@ router.get('/health', (req, res) => {
  * @param {object} req.body - 保存するテキスト値
  * @returns {object} 作成結果とステータス情報
  */
-router.post('/stores', storeValidationRules, (req: Request, res: Response) => {
-    storeController.createStore(req, res)
-})
+router.post('/stores', storeValidationRules, storeController.createStore.bind(storeController))
 
 /**
  * 店舗情報取得エンドポイント
@@ -52,18 +50,14 @@ router.post('/stores', storeValidationRules, (req: Request, res: Response) => {
  * @param {string} req.params.id - 取得対象の店舗ID
  * @returns {object} 店舗情報とステータス情報
  */
-router.get('/stores/:id', (req: Request, res: Response) => {
-    storeController.getStoreById(req, res)
-})
+router.get('/stores/:id', storeController.getStoreById.bind(storeController))
 
 /**
  * 全店舗情報取得エンドポイント
  * データベースに登録されている全ての店舗情報を取得する
  * @returns {Array<object>} 店舗情報の配列とステータス情報
  */
-router.get('/stores', (req: Request, res: Response) => {
-    storeController.getStoresAll(req, res)
-})
+router.get('/stores', storeController.getStoresAll.bind(storeController))
 
 /**
  * 店舗情報更新エンドポイント
@@ -72,9 +66,7 @@ router.get('/stores', (req: Request, res: Response) => {
  * @param {object} req.body - 更新するデータ
  * @returns {object} 更新結果とステータス情報
  */
-router.put('/stores/:id', storeValidationRules, (req: Request, res: Response) => {
-    storeController.updateStore(req, res)
-})
+router.put('/stores/:id', storeValidationRules, storeController.updateStore.bind(storeController))
 
 /**
  * 店舗営業状態変更エンドポイント
@@ -119,9 +111,7 @@ router.get('/calloptions', (req: Request, res: Response) => {
  * @param {string} req.params.id - 対象店舗ID
  * @returns {Array<object>} トッピングコール情報の配列とステータス情報
  */
-router.get('/stores/:id/toppingcalls', (req: Request, res: Response) => {
-    storeController.getStoreToppingCalls(req, res)
-})
+router.get('/stores/:id/toppingcalls', storeController.getStoreToppingCalls.bind(storeController))
 
 /**
  * 店舗画像アップロードエンドポイント
@@ -130,9 +120,7 @@ router.get('/stores/:id/toppingcalls', (req: Request, res: Response) => {
  * @param {File} req.file - アップロードする画像ファイル
  * @returns {object} アップロード結果とステータス情報
  */
-router.post('/stores/:id/images', imageUploadValidationRules, (req: Request, res: Response) => {
-    imageController.uploadStoreImage(req, res)
-})
+router.post('/stores/:id/images', imageUploadValidationRules, imageController.uploadStoreImage.bind(imageController))
 
 /**
  * 店舗画像一覧取得エンドポイント
@@ -140,9 +128,7 @@ router.post('/stores/:id/images', imageUploadValidationRules, (req: Request, res
  * @param {string} req.params.id - 対象店舗ID
  * @returns {Array<object>} 画像情報の配列とステータス情報
  */
-router.get(`/stores/:id/images`, imageGetValidationRules, (req: Request, res: Response) => {
-    imageController.getStoreImages(req, res)
-})
+router.get(`/stores/:id/images`, imageGetValidationRules, imageController.getStoreImages.bind(imageController))
 
 /**
  * 画像情報取得エンドポイント（店舗ID＋画像ID指定）
@@ -151,34 +137,21 @@ router.get(`/stores/:id/images`, imageGetValidationRules, (req: Request, res: Re
  * @param {string} req.params.imageId - 対象画像ID
  * @returns {object} 画像情報とステータス情報（成功時）、またはエラー情報（失敗時）
  */
-router.get(`/stores/:storeId/images/:imageId`, (req: Request, res: Response) => {
-    imageController.getImageByImageId(req, res)
-})
+router.get(`/stores/:storeId/images/:imageId`, imageController.getImageByImageId.bind(imageController))
 
+router.put(`/stores/:storeId/images/:imageId`, imageUpdateValidationRules, imageController.updateStoreImage.bind(imageController))
 
-router.put(`/stores/:storeId/images/:imageId`, imageUpdateValidationRules, (req: Request, res: Response) => {
-    imageController.updateStoreImage(req, res)
-})
-
-router.delete(`/stores/:storeId/images/:imageId`, authenticateUser, imageGetValidationRules, (req: Request, res: Response) => {
-    imageController.deleteStoreImage(req, res)
-})
+router.delete(`/stores/:storeId/images/:imageId`, authenticateUser, imageGetValidationRules, imageController.deleteStoreImage.bind(imageController))
 
 /**
  * フォーマット済みトッピングコールオプション取得エンドポイント
  * フロントエンド表示用にフォーマットされたトッピングとコールオプションの関連情報を取得する
  * @returns {object} フォーマット済みのトッピングとコールオプションデータとステータス情報
  */
-router.get(`/toppings/calloptions`, (req: Request, res: Response) => {
-    toppingController.getFormattedToppingCollOption(req, res)
-})
+router.get(`/toppings/calloptions`, toppingController.getFormattedToppingCollOption.bind(toppingController))
 
-router.post(`/users`, authenticateUser, userValidationRules, (req: Request, res: Response) => {
-    userController.createUser(req, res)
-})
+router.post(`/users`, authenticateUser, userValidationRules, userController.createUser.bind(userController))
 
-router.get('/users/:uid', authenticateUser, (req: Request, res: Response) => {
-    userController.getUserByUid(req, res)
-})
+router.get('/users/:uid', authenticateUser, userController.getUserByUid.bind(userController))
 
 export default router
