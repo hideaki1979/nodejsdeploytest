@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express"
+import { Router } from "express"
 import { storeValidationRules } from "../middlewares/validation"
 import { StoreController } from "../controllers/storeController"
 import { ToppingController } from "../controllers/toppingController"
@@ -74,36 +74,28 @@ router.put('/stores/:id', storeValidationRules, storeController.updateStore.bind
  * @param {string} req.params.id - 対象店舗ID
  * @returns {object} 変更結果とステータス情報
  */
-router.patch('/stores/:id/close', (req: Request, res: Response) => {
-    storeController.storeClose(req, res)
-})
+router.patch('/stores/:id/close', storeController.storeClose.bind(storeController))
 
 /**
  * マップ情報取得エンドポイント
  * 全ての店舗の位置情報を取得する
  * @returns {Array<object>} 位置情報を含む店舗データの配列とステータス情報
  */
-router.get('/maps', (req: Request, res: Response) => {
-    storeController.getMapAll(req, res)
-})
+router.get('/maps', storeController.getMapAll.bind(storeController))
 
 /**
  * トッピング情報取得エンドポイント
  * 全てのトッピング情報を取得する
  * @returns {Array<object>} トッピング情報の配列とステータス情報
  */
-router.get('/toppings', (req: Request, res: Response) => {
-    toppingController.getToppingAll(req, res)
-})
+router.get('/toppings', toppingController.getToppingAll.bind(toppingController))
 
 /**
  * コールオプション取得エンドポイント
  * 全てのコールオプション情報を取得する
  * @returns {Array<object>} コールオプション情報の配列とステータス情報
  */
-router.get('/calloptions', (req: Request, res: Response) => {
-    toppingController.getCallOptionAll(req, res)
-})
+router.get('/calloptions', toppingController.getCallOptionAll.bind(toppingController))
 
 /**
  * 店舗別トッピングコール情報取得エンドポイント
