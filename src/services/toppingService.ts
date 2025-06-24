@@ -1,6 +1,8 @@
+import { injectable } from "tsyringe";
 import prisma from "../prismaClient";
 import { ResultToppingCall } from "../types/toppingCallOption";
 
+@injectable()
 export class ToppingService {
 
     /**

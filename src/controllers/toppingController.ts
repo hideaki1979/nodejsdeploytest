@@ -1,63 +1,37 @@
 import { Request, Response } from "express";
 import { ToppingService } from "../services/toppingService";
+import { injectable } from "tsyringe";
 
+@injectable()
 export class ToppingController {
-    private toppingService: ToppingService
 
-    constructor() {
-        this.toppingService = new ToppingService()
-    }
+    constructor(private toppingService: ToppingService) { }
 
     async getToppingAll(req: Request, res: Response): Promise<void> {
-        try {
-            const results = await this.toppingService.getToppingAll()
-            res.status(200).json({
-                status: "success",
-                message: "トッピング情報を正常に取得できました",
-                data: results
-            })
-        } catch (error) {
-            console.error("トッピング情報取得エラー：", error)
-            res.status(500).json({
-                status: "error",
-                message: error instanceof Error ? error.message : "トッピング情報取得中にエラーが発生しました。"
-            })
-        }
+        const results = await this.toppingService.getToppingAll()
+        res.status(200).json({
+            success: true,
+            message: "トッピング情報を正常に取得できました",
+            data: results
+        })
     }
 
     async getCallOptionAll(req: Request, res: Response) {
-        try {
-            const results = await this.toppingService.getCallOptionAll()
-            res.status(200).json({
-                status: "success",
-                message: "コールオプション情報を正常に取得できました",
-                data: results
-            })
-        } catch (error) {
-            console.error("トッピング情報取得エラー：", error)
-            res.status(500).json({
-                status: "error",
-                message: error instanceof Error ? error.message : "トッピング情報取得中にエラーが発生しました。"
-            })
-        }
+        const results = await this.toppingService.getCallOptionAll()
+        res.status(200).json({
+            success: true,
+            message: "コールオプション情報を正常に取得できました",
+            data: results
+        })
     }
 
     async getFormattedToppingCollOption(req: Request, res: Response) {
-        try {
-            // console.log("API通ってます！")
-            const results = await this.toppingService.getFormattedToppingCollOption()
-            res.status(200).json({
-                status: "success",
-                message: "トッピング・コールオプション情報を正常に取得できました",
-                data: results
-            })
+        const results = await this.toppingService.getFormattedToppingCollOption()
+        res.status(200).json({
+            success: true,
+            message: "トッピング・コールオプション情報を正常に取得できました",
+            data: results
+        })
 
-        } catch (error) {
-            console.error("トッピング・コールオプション情報取得エラー：", error)
-            res.status(500).json({
-                status: "error",
-                message: error instanceof Error ? error.message : "トッピング・コールオプション情報取得中にエラーが発生しました。"
-            })
-        }
     }
 }
