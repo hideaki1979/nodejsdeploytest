@@ -7,6 +7,7 @@ export class AppError extends Error {
     constructor(message: string, statusCode: number) {
         super(message)
         this.statusCode = statusCode
+        this.name = 'AppError'
         Object.setPrototypeOf(this, AppError.prototype)
     }
 }
@@ -18,7 +19,7 @@ export class AppError extends Error {
  * @param res - Expressレスポンスオブジェクト
  * @param next - 次のミドルウェア関数
  */
-export const errorMiddleware = (err: Error, req: Request, res: Response, next: NextFunction) => {
+export const errorMiddleware = (err: Error, req: Request, res: Response, _next: NextFunction) => {
     // デフォルトのエラー情報を設定
     let statusCode = 500
     let message = 'サーバー内部で予期せぬエラーが発生しました。'
@@ -36,5 +37,4 @@ export const errorMiddleware = (err: Error, req: Request, res: Response, next: N
         success: false,
         error: message
     })
-    next()
 }
