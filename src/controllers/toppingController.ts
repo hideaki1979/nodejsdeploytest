@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { ToppingService } from "../services/toppingService";
-import { injectable } from "tsyringe";
+import { autoInjectable } from "tsyringe";
 
-@injectable()
+@autoInjectable()
 export class ToppingController {
 
     constructor(private toppingService: ToppingService) { }

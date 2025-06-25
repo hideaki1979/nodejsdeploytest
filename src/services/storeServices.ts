@@ -3,13 +3,13 @@ import prisma from "../prismaClient"
 import { GeocodingResult, StoreData, StoreToppingCallFilter } from "../types/store";
 import { GeocodingService } from "./geocodingService"
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "../types/toppingCallOption";
-import { injectable } from "tsyringe";
 import { AppError } from "../middlewares/errorMiddleware";
+import { autoInjectable } from "tsyringe";
 
 /**
  * 店舗情報に関するビジネスロジックを提供するサービスクラス
  */
-@injectable()
+@autoInjectable()
 export class StoreService {
 
     constructor(private geoCodingService: GeocodingService) { }

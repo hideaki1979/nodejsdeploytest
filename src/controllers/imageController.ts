@@ -3,9 +3,9 @@ import { ImageService } from "../services/imageService";
 import { validationResult } from "express-validator";
 import { StoreImageUploadData } from "../types/image";
 import { getAuthenticatedUserid } from "../utils/auth";
-import { injectable } from "tsyringe";
+import { autoInjectable } from "tsyringe";
 
-@injectable()
+@autoInjectable()
 export class ImageController {
 
     /**
