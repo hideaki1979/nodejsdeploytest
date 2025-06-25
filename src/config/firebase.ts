@@ -1,36 +1,36 @@
 import admin from "firebase-admin"
-import path from "path"
+import config from "./config"
+import { AppError } from "../middlewares/errorMiddleware"
 
 /**
  * Firebase Adminの初期化
- * 環境に応じて認証情報の取得方法を切り替える
- * 本番環境: 環境変数から認証情報を取得
- * 開発環境: ローカルのJSONファイルから認証情報を取得
+ * 設定ファイルから読み込んだ情報を使用して初期化を行う
  */
-let credential: admin.credential.Credential
+let credential
 
-if (process.env.FIREBASE_CONFIG) {
-    // 本番環境: 環境変数から認証情報を取得
-    try {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG)
+try {
+    // NODE_ENVに応じて認証情報の設定を分岐
+    if (config.server.nodeEnv === 'production') {
+        // 本番環境: 環境変数からパースしたJSONオブジェクトを使用
+        const serviceAccount = JSON.parse(config.firebase.serviceAccount)
         credential = admin.credential.cert(serviceAccount)
-        console.log("Firebase初期化（環境変数解析・本番環境）完了")
-    } catch (error) {
-        console.error("Firebase初期化エラー（環境変数解析）：", error)
-        throw new Error("Firebaseの環境変数解析時にエラーが発生しました。")
+        console.log("Firebase初期化（本番環境）完了")
+    } else {
+        // 開発環境: サービスアカウントキーのファイルパスを使用
+        credential = admin.credential.cert(config.firebase.serviceAccount)
+        console.log("Firebase初期化（開発環境）完了")
     }
-} else {
-    // 開発環境: ローカルのJSONファイルから認証情報を取得
-    const GOOGLE_APPLICATION_CREDENTIALS = path.join(__dirname, "../../jnaviproject-firebase-adminsdk-fbsvc-f96e2396e1.json")
-    credential = admin.credential.cert(GOOGLE_APPLICATION_CREDENTIALS)
-    console.log("Firebase初期化（環境変数解析・開発環境）完了")
+} catch (error) {
+    console.error("Firebase初期化エラー（環境変数解析）：", error)
+    console.log("Firebase初期化（開発環境）完了")
+    throw new AppError("Firebaseの環境変数解析時にエラーが発生しました。", 500)
 }
 
 // Firebaseアプリの初期化
 if (!admin.apps.length) {
     admin.initializeApp({
         credential,
-        storageBucket: "jnaviproject.firebasestorage.app"
+        storageBucket: config.firebase.storageBucket
     })
 }
 

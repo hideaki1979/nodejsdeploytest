@@ -1,3 +1,10 @@
+import dotenv from 'dotenv'
+import path from 'path'
+
+//.envファイルを読み込む
+// この処理は他のどのimportよりも先に実行される必要がある
+dotenv.config({ path: path.resolve(__dirname, '../.env') })
+
 import 'reflect-metadata'
 import 'express-async-errors'
 import express from 'express'
@@ -51,7 +58,7 @@ app.use(errorMiddleware)
  * サーバーの起動設定
  * 指定されたポートでHTTPサーバーを起動
  */
-const PORT = config.port
+const PORT = config.server.port
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`)
 })

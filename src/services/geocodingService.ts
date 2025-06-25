@@ -1,6 +1,7 @@
 import NodeGeocoder from 'node-geocoder';
 import { injectable } from 'tsyringe';
 import { AppError } from '../middlewares/errorMiddleware';
+import config from '../config/config';
 
 /**
  * ジオコーディングサービス
@@ -14,7 +15,7 @@ export class GeocodingService {
         // geocoderの設定
         const options: NodeGeocoder.Options = {
             provider: 'google',
-            apiKey: process.env.GOOGLE_MAPS_API_KEY,
+            apiKey: config.google.mapsApiKey,
             formatter: null
         }
 
