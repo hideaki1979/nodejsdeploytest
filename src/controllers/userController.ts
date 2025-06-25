@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/userServices";
 import { validationResult } from "express-validator";
-import { injectable } from "tsyringe";
 import { AppError } from "../middlewares/errorMiddleware";
+import { autoInjectable } from "tsyringe";
 
-@injectable()
+@autoInjectable()
 export class UserController {
 
     constructor(private userService: UserService) { }

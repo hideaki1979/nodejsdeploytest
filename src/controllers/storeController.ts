@@ -3,13 +3,13 @@ import { validationResult } from "express-validator";
 import { StoreService } from "../services/storeServices";
 import { FormattedToppingOptionNameStoreData, StoreToppingCallFilter } from "../types/store";
 import { AppError } from "../middlewares/errorMiddleware";
-import { injectable } from "tsyringe";
+import { autoInjectable } from "tsyringe";
 
 /**
  * 店舗情報に関するリクエストを処理するコントローラー
  * フロントエンドからのリクエストを受け取り、適切なサービスに処理を委譲する
  */
-@injectable()
+@autoInjectable()
 export class StoreController {
     /**
    * コントローラーの初期化
