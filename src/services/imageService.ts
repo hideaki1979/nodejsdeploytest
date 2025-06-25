@@ -1,13 +1,18 @@
-import prisma from "../prismaClient";
 import { StoreImageDownloadData, StoreImageEditData, StoreImageUploadData } from "../types/image";
 import { v4 as uuidv4 } from 'uuid'
 import { bucket } from "../config/firebase";
-import { Image, Prisma } from "@prisma/client";
-import { injectable } from "tsyringe";
+import { Image, Prisma, PrismaClient } from "@prisma/client";
+import { inject, injectable } from "tsyringe";
 import { AppError } from "../middlewares/errorMiddleware";
+import { PRISMA_CLIENT } from "../di.token";
 
 @injectable()
 export class ImageService {
+
+    constructor(
+        @inject(PRISMA_CLIENT) private prisma: PrismaClient
+    ) { }
+
     /**
    * 店舗画像とそれに関連するトッピング情報を登録する
    * 画像はBase64形式でエンコードされている必要がある
@@ -16,7 +21,7 @@ export class ImageService {
    */
     async createImage(data: StoreImageUploadData) {
         // トランザクションで処理することで、データの整合性を担保
-        return await prisma.$transaction(async (tx) => {
+        return await this.prisma.$transaction(async (tx) => {
             // Base64画像データをバッファに変換
             // console.log("base64：", data.image_base64)
             const matches = data.image_base64!.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
@@ -98,7 +103,7 @@ export class ImageService {
         const storeBigInt = BigInt(storeId)
 
         // 画像情報を取得
-        const images = await prisma.image.findMany({
+        const images = await this.prisma.image.findMany({
             where: {
                 store_id: storeBigInt
             }
@@ -109,7 +114,7 @@ export class ImageService {
         //  各画像のトッピングオプション情報を取得する。
         for (const image of images) {
             // 画像に関連するトッピングコール情報を取得する。
-            const toppingCalls = await prisma.imageStoreToppingCall.findMany({
+            const toppingCalls = await this.prisma.imageStoreToppingCall.findMany({
                 where: {
                     image_id: image.id
                 },
@@ -153,7 +158,7 @@ export class ImageService {
         const imageBigInt = BigInt(imageId)
 
         // 画像情報を取得
-        const image = await prisma.image.findFirst({
+        const image = await this.prisma.image.findFirst({
             where: {
                 id: imageBigInt,
                 store_id: storeBigInt
@@ -196,7 +201,7 @@ export class ImageService {
     }
 
     async updateStoreImageService(storeId: string | number, imageId: string | number, data: StoreImageUploadData) {
-        return await prisma.$transaction(async (tx) => {
+        return await this.prisma.$transaction(async (tx) => {
             // パラメータをBigIntに変換
             const storeBigInt = BigInt(storeId)
             const imageBigInt = BigInt(imageId)
@@ -303,7 +308,7 @@ export class ImageService {
         const imageBigInt = BigInt(imageId)
 
         // 画像存在確認（共通処理）
-        const currentImage = await prisma.$transaction(async (tx) => {
+        const currentImage = await this.prisma.$transaction(async (tx) => {
             // 画像所有者チェック
             await this.validateImageOwnership(tx, storeBigInt, imageBigInt, userId)
             // 画像存在確認（共通処理）
@@ -319,7 +324,7 @@ export class ImageService {
         }
 
         // imagesテーブルから画像情報を削除
-        const deleteImage = await prisma.$transaction(async (tx) => {
+        const deleteImage = await this.prisma.$transaction(async (tx) => {
             // 関連するimage_store_topping_callsを削除（共通処理）
             await this.deleteImageToppingCalls(tx, imageBigInt)
 

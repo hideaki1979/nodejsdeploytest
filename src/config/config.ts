@@ -1,4 +1,5 @@
 import { AppError } from '../middlewares/errorMiddleware';
+import { parseIntWithValidation } from '../utils/env';
 
 /**
  * 環境変数が設定されていない場合にエラーをスローする関数
@@ -27,6 +28,7 @@ const config = {
     db: {
         databaseUrl: getEnv('DATABASE_URL')
     },
+    // firebase設定
     firebase: {
         // Firebase設定
         storageBucket: getEnv('FIREBASE_STORAGE_BUCKET'),
@@ -38,6 +40,11 @@ const config = {
     // Google Maps APIキー
     google: {
         mapsApiKey: getEnv('GOOGLE_MAPS_API_KEY'),
+    },
+    // Prisma
+    prisma: {
+        transactionMaxWait: parseIntWithValidation(getEnv('PRISMA_TRANSACTION_MAX_WAIT'), 'PRISMA_TRANSACTION_MAX_WAIT'),
+        transactionTimeout: parseIntWithValidation(getEnv('PRISMA_TRANSACTION_TIMEOUT'), 'PRISMA_TRANSACTION_TIMEOUT')
     }
 }
 

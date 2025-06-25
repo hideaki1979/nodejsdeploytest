@@ -1,16 +1,21 @@
-import { injectable } from "tsyringe";
-import prisma from "../prismaClient";
+import { inject, injectable } from "tsyringe";
 import { ResultToppingCall } from "../types/toppingCallOption";
+import { PrismaClient } from "@prisma/client";
+import { PRISMA_CLIENT } from "../di.token";
 
 @injectable()
 export class ToppingService {
+
+    constructor(
+        @inject(PRISMA_CLIENT) private prisma: PrismaClient
+    ) { }
 
     /**
      *  全てのトッピング情報を取得する
      * @returns トッピング情報のリスト
      */
     async getToppingAll() {
-        const toppings = await prisma.topping.findMany()
+        const toppings = await this.prisma.topping.findMany()
         return toppings
     }
 
@@ -19,7 +24,7 @@ export class ToppingService {
      * @returns コールオプション情報のリスト
      */
     async getCallOptionAll() {
-        const callOptions = await prisma.callOption.findMany()
+        const callOptions = await this.prisma.callOption.findMany()
         return callOptions
     }
 
@@ -29,7 +34,7 @@ export class ToppingService {
      */
     async getFormattedToppingCollOption() {
         // 全てのトッピング情報を取得する
-        const toppings = await prisma.topping.findMany({
+        const toppings = await this.prisma.topping.findMany({
             select: {
                 id: true,
                 topping_category: true,
@@ -37,7 +42,7 @@ export class ToppingService {
             }
         })
 
-        const callOptions = await prisma.callOption.findMany({
+        const callOptions = await this.prisma.callOption.findMany({
             select: {
                 id: true,
                 call_category: true,
@@ -71,9 +76,6 @@ export class ToppingService {
             }
         }
 
-        // console.log(JSON.stringify(result, null, 2))
-
         return result
-
     }
 }
