@@ -49,19 +49,19 @@ storeRouter.put('/:id', storeValidationRules, storeController.updateStore.bind(s
 storeRouter.patch('/:id/close', storeController.storeClose.bind(storeController))
 
 /**
- * マップ情報取得エンドポイント
- * 全ての店舗の位置情報を取得する
- * @returns {Array<object>} 位置情報を含む店舗データの配列とステータス情報
- */
-const mapRouter = Router()
-mapRouter.get('/', storeController.getMapAll.bind(storeController))
-
-/**
  * 店舗別トッピングコール情報取得エンドポイント
  * 指定された店舗のトッピングコール情報を取得する
  * @param {string} req.params.id - 対象店舗ID
  * @returns {Array<object>} トッピングコール情報の配列とステータス情報
  */
 storeRouter.get('/:id/toppingcalls', storeController.getStoreToppingCalls.bind(storeController))
+
+/**
+ * マップ情報取得エンドポイント
+ * 全ての店舗の位置情報を取得する
+ * @returns {Array<object>} 位置情報を含む店舗データの配列とステータス情報
+ */
+const mapRouter = Router()
+mapRouter.get('/', storeController.getMapAll.bind(storeController))
 
 export { storeRouter, mapRouter }
