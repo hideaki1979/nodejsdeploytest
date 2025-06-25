@@ -1,12 +1,13 @@
 import { inject, injectable } from "tsyringe";
 import { ResultToppingCall } from "../types/toppingCallOption";
 import { PrismaClient } from "@prisma/client";
+import { PRISMA_CLIENT } from "../di.token";
 
 @injectable()
 export class ToppingService {
 
     constructor(
-        @inject('PrismaClient') private prisma: PrismaClient
+        @inject(PRISMA_CLIENT) private prisma: PrismaClient
     ) { }
 
     /**

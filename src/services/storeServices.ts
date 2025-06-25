@@ -4,6 +4,7 @@ import { GeocodingService } from "./geocodingService"
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "../types/toppingCallOption";
 import { AppError } from "../middlewares/errorMiddleware";
 import { inject, injectable } from "tsyringe";
+import { PRISMA_CLIENT } from "../di.token";
 
 /**
  * 店舗情報に関するビジネスロジックを提供するサービスクラス
@@ -12,7 +13,7 @@ import { inject, injectable } from "tsyringe";
 export class StoreService {
 
     constructor(
-        @inject('PrismaClient') private prisma: PrismaClient,
+        @inject(PRISMA_CLIENT) private prisma: PrismaClient,
         private geoCodingService: GeocodingService
     ) { }
     /**

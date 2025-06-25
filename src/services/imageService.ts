@@ -4,12 +4,13 @@ import { bucket } from "../config/firebase";
 import { Image, Prisma, PrismaClient } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { AppError } from "../middlewares/errorMiddleware";
+import { PRISMA_CLIENT } from "../di.token";
 
 @injectable()
 export class ImageService {
 
     constructor(
-        @inject('PrismaClient') private prisma: PrismaClient
+        @inject(PRISMA_CLIENT) private prisma: PrismaClient
     ) { }
 
     /**

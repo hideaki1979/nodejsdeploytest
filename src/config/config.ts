@@ -27,6 +27,7 @@ const config = {
     db: {
         databaseUrl: getEnv('DATABASE_URL')
     },
+    // firebase設定
     firebase: {
         // Firebase設定
         storageBucket: getEnv('FIREBASE_STORAGE_BUCKET'),
@@ -38,6 +39,11 @@ const config = {
     // Google Maps APIキー
     google: {
         mapsApiKey: getEnv('GOOGLE_MAPS_API_KEY'),
+    },
+    // Prisma
+    prisma: {
+        transactionMaxWait: Number(getEnv('PRISMA_TRANSACTION_MAX_WAIT')),
+        transactionTimeout: Number(getEnv('PRISMA_TRANSACTION_TIMEOUT'))
     }
 }
 

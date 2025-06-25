@@ -1,12 +1,13 @@
 import { inject, injectable } from "tsyringe";
 import { User } from "../types/user";
 import { PrismaClient } from "@prisma/client";
+import { PRISMA_CLIENT } from "../di.token";
 
 @injectable()
 export class UserService {
 
     constructor(
-        @inject('PrismaClient') private prisma: PrismaClient
+        @inject(PRISMA_CLIENT) private prisma: PrismaClient
     ) { }
 
     async createUser(data: User) {
