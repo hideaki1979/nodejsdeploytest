@@ -50,7 +50,7 @@ export class ImageController {
     }
 
     async getStoreImages(req: Request, res: Response): Promise<void> {
-        const storeId = Number(req.params.id)
+        const storeId = Number(req.params.storeId)
         // サービスクラスから店舗単位の画像情報を取得する。
         const result = await this.imageService.getImageByStoreId(storeId)
         // console.log("店舗画像リスト：", JSON.stringify(result, null, 2))
