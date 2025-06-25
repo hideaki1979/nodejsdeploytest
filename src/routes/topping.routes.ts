@@ -17,7 +17,7 @@ toppingRouter.get('/', toppingController.getToppingAll.bind(toppingController))
  * フロントエンド表示用にフォーマットされたトッピングとコールオプションの関連情報を取得する
  * @returns {object} フォーマット済みのトッピングとコールオプションデータとステータス情報
  */
-toppingRouter.get(`/calloptions`, toppingController.getFormattedToppingCollOption.bind(toppingController))
+toppingRouter.get(`/calloptions/formatted`, toppingController.getFormattedToppingCollOption.bind(toppingController))
 
 /**
  * コールオプション取得エンドポイント
