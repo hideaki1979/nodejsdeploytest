@@ -1,9 +1,14 @@
-import { injectable } from "tsyringe";
-import prisma from "../prismaClient";
+import { inject, injectable } from "tsyringe";
 import { User } from "../types/user";
+import { PrismaClient } from "@prisma/client";
 
 @injectable()
 export class UserService {
+
+    constructor(
+        @inject('PrismaClient') private prisma: PrismaClient
+    ) { }
+
     async createUser(data: User) {
         try {
             const userData = {
@@ -12,7 +17,7 @@ export class UserService {
                 email: data.email,
                 provider: data.authProvider
             }
-            const user = await prisma.user.create({
+            const user = await this.prisma.user.create({
                 data: userData
             })
             return user
@@ -32,7 +37,7 @@ export class UserService {
 
     async getIdToken(uid: string) {
         try {
-            const user = await prisma.user.findUnique({
+            const user = await this.prisma.user.findUnique({
                 where: {
                     id: uid
                 }

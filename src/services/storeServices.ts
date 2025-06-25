@@ -1,18 +1,20 @@
-import { Prisma, StoreToppingCall } from "@prisma/client";
-import prisma from "../prismaClient"
+import { Prisma, PrismaClient, StoreToppingCall } from "@prisma/client";
 import { GeocodingResult, StoreData, StoreToppingCallFilter } from "../types/store";
 import { GeocodingService } from "./geocodingService"
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "../types/toppingCallOption";
 import { AppError } from "../middlewares/errorMiddleware";
-import { autoInjectable } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 
 /**
  * 店舗情報に関するビジネスロジックを提供するサービスクラス
  */
-@autoInjectable()
+@injectable()
 export class StoreService {
 
-    constructor(private geoCodingService: GeocodingService) { }
+    constructor(
+        @inject('PrismaClient') private prisma: PrismaClient,
+        private geoCodingService: GeocodingService
+    ) { }
     /**
    * 店舗情報とマップ情報を同時に登録する
    * トランザクションを使用してテーブルの整合性を担保する
@@ -23,7 +25,7 @@ export class StoreService {
         const geocodingResult: GeocodingResult
             = await this.geoCodingService.geocodeAddress(data.address)
         // トランザクション開始
-        return await prisma.$transaction(async (tx) => {
+        return await this.prisma.$transaction(async (tx) => {
             // 店舗データをセット
             const storeData: Omit<StoreData, 'topping_calls'> = {
                 store_name: data.store_name,
@@ -87,7 +89,7 @@ export class StoreService {
         const geoResult = await this.geoCodingService.geocodeAddress(data.address)
 
         // トランザクション開始
-        return await prisma.$transaction(async (tx) => {
+        return await this.prisma.$transaction(async (tx) => {
             // 店舗データをセット
             const storeData: Omit<StoreData, 'topping_calls'> = {
                 store_name: data.store_name,
@@ -154,7 +156,7 @@ export class StoreService {
      * @throws Error IDに該当する店舗が見つからない場合
      */
     async getStoreById(storeId: number) {
-        const store = await prisma.store.findUnique({
+        const store = await this.prisma.store.findUnique({
             where: {
                 id: storeId
             },
@@ -295,7 +297,7 @@ export class StoreService {
      */
     async getMapAll() {
         // 店舗フィールドの選択オプション生成
-        const mapWithStores = await prisma.map.findMany({
+        const mapWithStores = await this.prisma.map.findMany({
             select: {
                 id: true,
                 latitude: true,
@@ -320,7 +322,7 @@ export class StoreService {
      */
     async getStoresAll() {
         // 店舗フィールドの選択オプション生成
-        const stores = await prisma.store.findMany({
+        const stores = await this.prisma.store.findMany({
             select: {
                 id: true,
                 store_name: true,
@@ -355,7 +357,7 @@ export class StoreService {
         }
 
         // 店舗別トッピングコール情報の事前コール選択オプション生成
-        const storeToppingCalls = await prisma.store.findUnique({
+        const storeToppingCalls = await this.prisma.store.findUnique({
             where: {
                 id: storeId
             },
@@ -391,7 +393,7 @@ export class StoreService {
             }
         })
         if (!storeToppingCalls) {
-            throw new Error(`ID: ${storeId}の店舗は存在しません。`)
+            throw new AppError(`ID: ${storeId}の店舗は存在しません。`, 400)
         }
 
 
@@ -459,7 +461,7 @@ export class StoreService {
      */
     async storeClose(storeId: number, storeName: string) {
         const closeStoreName = `【閉店】${storeName}`
-        const store = await prisma.store.update({
+        const store = await this.prisma.store.update({
             where: {
                 id: storeId
             },

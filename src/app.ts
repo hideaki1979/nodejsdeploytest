@@ -14,6 +14,21 @@ import config from './config/config'
 import { setupBigIntSerialization } from './utils/bigintExtension'
 import './config/firebase'
 import { AppError, errorMiddleware } from './middlewares/errorMiddleware'
+import { PrismaClient } from '@prisma/client'
+import { container } from 'tsyringe'
+
+/**
+ * PrismaClientのインスタンスをDIコンテナに登録
+ * アプリケーション全体で単一のインスタンスを共有する
+ */
+const prisma = new PrismaClient({
+  transactionOptions: {
+    maxWait: 10000,  // トランザクション開始の最大待機時間（10秒）
+    timeout: 60000   // トランザクション全体の最大実行時間（60秒）
+
+  }
+})
+container.registerInstance('PrismaClient', prisma)
 
 /**
  * BigInt型のJSONシリアライズをサポートするための拡張を設定
