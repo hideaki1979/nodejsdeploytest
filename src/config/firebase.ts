@@ -22,7 +22,6 @@ try {
     }
 } catch (error) {
     console.error("Firebase初期化エラー（環境変数解析）：", error)
-    console.log("Firebase初期化（開発環境）完了")
     throw new AppError("Firebaseの環境変数解析時にエラーが発生しました。", 500)
 }
 
