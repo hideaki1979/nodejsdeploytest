@@ -14,7 +14,7 @@ export class StoreService {
 
     constructor(
         @inject(PRISMA_CLIENT) private prisma: PrismaClient,
-        private geoCodingService: GeocodingService
+        @inject(GeocodingService) private geoCodingService: GeocodingService
     ) { }
     /**
    * 店舗情報とマップ情報を同時に登録する
