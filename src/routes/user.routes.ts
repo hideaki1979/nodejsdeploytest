@@ -13,7 +13,7 @@ const userController = container.resolve(UserController)
  * @param {object} req.body - ユーザー情報
  * @returns {object} 作成されたユーザー情報とステータス情報
  */
-userRouter.post(`/users`, authenticateUser, userValidationRules, userController.createUser.bind(userController))
+userRouter.post(`/`, authenticateUser, userValidationRules, userController.createUser.bind(userController))
 
 /**
  * ユーザー情報取得エンドポイント
@@ -21,6 +21,6 @@ userRouter.post(`/users`, authenticateUser, userValidationRules, userController.
  * @param {string} req.params.uid - 取得対象のユーザーUID
  * @returns {object} ユーザー情報とステータス情報
  */
-userRouter.get('/users/:uid', authenticateUser, userController.getUserByUid.bind(userController))
+userRouter.get('/:uid', authenticateUser, userController.getUserByUid.bind(userController))
 
 export { userRouter }

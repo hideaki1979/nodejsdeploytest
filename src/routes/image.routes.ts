@@ -14,7 +14,7 @@ const imageController = container.resolve(ImageController)
  * @param {File} req.file - アップロードする画像ファイル
  * @returns {object} アップロード結果とステータス情報
  */
-imageRouter.post('/stores/:id/images', imageUploadValidationRules, imageController.uploadStoreImage.bind(imageController))
+imageRouter.post('/images', imageUploadValidationRules, imageController.uploadStoreImage.bind(imageController))
 
 /**
  * 店舗画像一覧取得エンドポイント
@@ -22,7 +22,7 @@ imageRouter.post('/stores/:id/images', imageUploadValidationRules, imageControll
  * @param {string} req.params.id - 対象店舗ID
  * @returns {Array<object>} 画像情報の配列とステータス情報
  */
-imageRouter.get(`/stores/:id/images`, imageGetValidationRules, imageController.getStoreImages.bind(imageController))
+imageRouter.get(`/images`, imageGetValidationRules, imageController.getStoreImages.bind(imageController))
 
 /**
  * 画像情報取得エンドポイント（店舗ID＋画像ID指定）
@@ -31,7 +31,7 @@ imageRouter.get(`/stores/:id/images`, imageGetValidationRules, imageController.g
  * @param {string} req.params.imageId - 対象画像ID
  * @returns {object} 画像情報とステータス情報（成功時）、またはエラー情報（失敗時）
  */
-imageRouter.get(`/stores/:storeId/images/:imageId`, imageGetValidationRules, imageController.getImageByImageId.bind(imageController))
+imageRouter.get(`/images/:imageId`, imageGetValidationRules, imageController.getImageByImageId.bind(imageController))
 
 /**
  * 画像情報更新エンドポイント（店舗ID＋画像ID指定）
@@ -40,7 +40,7 @@ imageRouter.get(`/stores/:storeId/images/:imageId`, imageGetValidationRules, ima
  * @param {object} req.body - 更新する画像データ
  * @returns {object} 更新結果とステータス情報
  */
-imageRouter.put(`/stores/:storeId/images/:imageId`, imageUpdateValidationRules, imageController.updateStoreImage.bind(imageController))
+imageRouter.put(`/images/:imageId`, imageUpdateValidationRules, imageController.updateStoreImage.bind(imageController))
 
 /**
  * 店舗画像削除エンドポイント（店舗ID＋画像ID指定）
@@ -48,6 +48,6 @@ imageRouter.put(`/stores/:storeId/images/:imageId`, imageUpdateValidationRules, 
  * @param {string} req.params.imageId - 対象画像ID
  * @returns {object} 削除結果とステータス情報
  */
-imageRouter.delete(`/stores/:storeId/images/:imageId`, authenticateUser, imageGetValidationRules, imageController.deleteStoreImage.bind(imageController))
+imageRouter.delete(`/images/:imageId`, authenticateUser, imageGetValidationRules, imageController.deleteStoreImage.bind(imageController))
 
 export { imageRouter }

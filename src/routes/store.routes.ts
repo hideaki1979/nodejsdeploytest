@@ -14,7 +14,7 @@ const storeController = container.resolve(StoreController)
  * @param {object} req.body - 保存するテキスト値
  * @returns {object} 作成結果とステータス情報
  */
-storeRouter.post('/stores', storeValidationRules, storeController.createStore.bind(storeController))
+storeRouter.post('/', storeValidationRules, storeController.createStore.bind(storeController))
 
 /**
  * 店舗情報取得エンドポイント
@@ -22,14 +22,14 @@ storeRouter.post('/stores', storeValidationRules, storeController.createStore.bi
  * @param {string} req.params.id - 取得対象の店舗ID
  * @returns {object} 店舗情報とステータス情報
  */
-storeRouter.get('/stores/:id', storeController.getStoreById.bind(storeController))
+storeRouter.get('/:id', storeController.getStoreById.bind(storeController))
 
 /**
  * 全店舗情報取得エンドポイント
  * データベースに登録されている全ての店舗情報を取得する
  * @returns {Array<object>} 店舗情報の配列とステータス情報
  */
-storeRouter.get('/stores', storeController.getStoresAll.bind(storeController))
+storeRouter.get('/', storeController.getStoresAll.bind(storeController))
 
 /**
  * 店舗情報更新エンドポイント
@@ -38,7 +38,7 @@ storeRouter.get('/stores', storeController.getStoresAll.bind(storeController))
  * @param {object} req.body - 更新するデータ
  * @returns {object} 更新結果とステータス情報
  */
-storeRouter.put('/stores/:id', storeValidationRules, storeController.updateStore.bind(storeController))
+storeRouter.put('/:id', storeValidationRules, storeController.updateStore.bind(storeController))
 
 /**
  * 店舗営業状態変更エンドポイント
@@ -46,7 +46,7 @@ storeRouter.put('/stores/:id', storeValidationRules, storeController.updateStore
  * @param {string} req.params.id - 対象店舗ID
  * @returns {object} 変更結果とステータス情報
  */
-storeRouter.patch('/stores/:id/close', storeController.storeClose.bind(storeController))
+storeRouter.patch('/:id/close', storeController.storeClose.bind(storeController))
 
 /**
  * マップ情報取得エンドポイント
@@ -54,7 +54,7 @@ storeRouter.patch('/stores/:id/close', storeController.storeClose.bind(storeCont
  * @returns {Array<object>} 位置情報を含む店舗データの配列とステータス情報
  */
 const mapRouter = Router()
-mapRouter.get('/maps', storeController.getMapAll.bind(storeController))
+mapRouter.get('/', storeController.getMapAll.bind(storeController))
 
 /**
  * 店舗別トッピングコール情報取得エンドポイント
@@ -62,6 +62,6 @@ mapRouter.get('/maps', storeController.getMapAll.bind(storeController))
  * @param {string} req.params.id - 対象店舗ID
  * @returns {Array<object>} トッピングコール情報の配列とステータス情報
  */
-storeRouter.get('/stores/:id/toppingcalls', storeController.getStoreToppingCalls.bind(storeController))
+storeRouter.get('/:id/toppingcalls', storeController.getStoreToppingCalls.bind(storeController))
 
 export { storeRouter, mapRouter }
