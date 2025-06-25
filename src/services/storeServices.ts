@@ -394,7 +394,7 @@ export class StoreService {
             }
         })
         if (!storeToppingCalls) {
-            throw new AppError(`ID: ${storeId}の店舗は存在しません。`, 400)
+            throw new AppError(`ID: ${storeId}の店舗は存在しません。`, 404)
         }
 
 
