@@ -20,6 +20,25 @@ import { Image, ImageStoreToppingCall } from "@prisma/client";
  *         store_id:
  *           type: integer
  *           description: 関連する店舗のID
+ *         menu_type:
+ *           type: integer
+ *           description: メニュータイプ
+ *         menu_name:
+ *           type: string
+ *           description: メニュー名
+ *         topping_calls:
+ *           type: array
+ *           items:
+ *             type: object
+ *              properties:
+ *                topping_id:
+ *                  type: integer
+ *                topping_name:
+ *                  type: string
+ *                call_option_id:
+ *                  type: integer
+ *                call_option_name:
+ *                  type: string
  *     ImageUpdate:
  *       type: object
  *       properties:

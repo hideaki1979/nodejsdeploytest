@@ -11,6 +11,8 @@ import { Store, Map, StoreToppingCall, Prisma } from "@prisma/client";
  *       required:
  *         - store_name
  *         - address
+ *         - business_hours
+ *         - regular_holidays
  *       properties:
  *         id:
  *           type: integer
@@ -18,23 +20,21 @@ import { Store, Map, StoreToppingCall, Prisma } from "@prisma/client";
  *         store_name:
  *           type: string
  *           description: 店舗名
- *         post_code:
+ *         branch_name:
  *           type: string
- *           description: 郵便番号
+ *           description: 支店名
  *         address:
  *           type: string
  *           description: 住所
- *         phone_number:
+ *         business_hours:
  *           type: string
- *           description: 電話番号
- *         latitude:
- *           type: number
- *           format: float
- *           description: 緯度
- *         longitude:
- *           type: number
- *           format: float
- *           description: 経度
+ *           description: 営業時間
+ *         regular_holidays:
+ *           type: string
+ *           description: 定休日
+ *         prior_meal_voucher:
+ *           type: boolean
+ *           description: 事前食券購入の有無
  *         is_close:
  *           type: boolean
  *           description: 閉店フラグ

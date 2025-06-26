@@ -1,48 +1,3 @@
-/**
- * @swagger
- * components:
- *   schemas:
- *     Image:
- *       type: object
- *       properties:
- *         id:
- *           type: integer
- *           description: 画像ID
- *         image_url:
- *           type: string
- *           description: 画像のURL
- *         user_id:
- *           type: string
- *           description: 投稿したユーザーのID
- *         store_id:
- *           type: integer
- *           description: 関連する店舗のID
- *     ImageUpdate:
- *       type: object
- *       properties:
- *         image_url:
- *           type: string
- *           description: 画像の新しいURL
- *   responses:
- *      ImageNotFound:
- *          description: 指定された画像が見つかりません。
- *          content:
- *            application/json:
- *              schema:
- *                type: object
- *                properties:
- *                  success:
- *                    type: boolean
- *                    example: false
- *                  error:
- *                    type: string
- *                    example: 画像が見つかりません
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
- */
 import { NextFunction, Request, Response, Router } from "express"
 import { container } from "tsyringe"
 import { ImageController } from "../controllers/imageController"
@@ -71,14 +26,15 @@ const imageRouter = Router({ mergeParams: true })
  *     requestBody:
  *       required: true
  *       content:
- *         multipart/form-data:
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
- *               image:
+ *               image_base64:
  *                 type: string
- *                 format: binary
- *                 description: アップロードする画像ファイル
+ *                 description: Base64エンコードされた画像データ
+ *             required:
+ *               - image_base64
  *     responses:
  *       '201':
  *         description: 画像が正常にアップロードされました。
@@ -206,7 +162,11 @@ imageRouter.get(`/:imageId`, imageGetValidationRules, (req: Request, res: Respon
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/ImageUpdate'
+ *             type: object
+ *             properties:
+ *               image_base64:
+ *                 type: string
+ *                 description: Base64エンコードされた新しい画像データ（オプション）
  *     responses:
  *       '200':
  *         description: 正常に画像情報を更新しました。

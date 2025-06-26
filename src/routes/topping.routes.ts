@@ -32,7 +32,7 @@ toppingRouter.get('/', createHandler(ToppingController, 'getToppingAll'))
 
 /**
  * @swagger
- * /toppings/call-options/formatted:
+ * /toppings/calloptions/formatted:
  *   get:
  *     tags:
  *       - Toppings

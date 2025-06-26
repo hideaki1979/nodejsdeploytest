@@ -8,10 +8,10 @@
  *         id:
  *           type: integer
  *           description: トッピングID
- *         name:
+ *         topping_name:
  *           type: string
  *           description: トッピング名
- *         category_id:
+ *         topping_category:
  *           type: integer
  *           description: カテゴリID
  *     CallOption:
@@ -20,9 +20,12 @@
  *         id:
  *           type: integer
  *           description: コールオプションID
- *         name:
+ *         call_option_name:
  *           type: string
  *           description: コール名
+ *         call_category:
+ *           type: integer
+ *           description: コールカテゴリ
  *     FormattedTopping:
  *       type: object
  *       properties:
