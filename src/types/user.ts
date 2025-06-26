@@ -5,7 +5,7 @@
  *     User:
  *       type: object
  *       properties:
- *         id:
+ *         uid:
  *           type: string
  *           description: ユーザーID
  *           example: 'clx123abc456'
@@ -18,23 +18,14 @@
  *           type: string
  *           description: 表示名
  *           example: 'Taro Yamada'
- *         photoURL:
- *           type: string
- *           format: uri
- *           description: プロフィール写真のURL
- *           example: 'https://example.com/profile.jpg'
- *         provider:
+ *         authProvider:
  *           type: string
  *           description: 認証プロバイダー (例: google, firebase)
  *           example: 'google.com'
- *         createdAt:
+ *         bio:
  *           type: string
- *           format: date-time
- *           description: 作成日時
- *         updatedAt:
- *           type: string
- *           format: date-time
- *           description: 更新日時
+ *           description: プロフィール
+ *           example: 'プロフィール情報です'
  *
  *     UserInput:
  *       type: object
@@ -58,7 +49,7 @@
  *           example: 'https://example.com/profile.jpg'
  */
 export interface User {
-    id: string;
+    uid: string;
     email: string;
     displayName: string;
     authProvider?: string;
