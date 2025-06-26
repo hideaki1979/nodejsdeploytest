@@ -1,3 +1,58 @@
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Store:
+ *       type: object
+ *       required:
+ *         - store_name
+ *         - address
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 店舗ID
+ *         store_name:
+ *           type: string
+ *           description: 店舗名
+ *         address:
+ *           type: string
+ *           description: 住所
+ *         is_close:
+ *           type: boolean
+ *           description: 閉店フラグ
+ *     Map:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 店舗ID
+ *         store_name:
+ *           type: string
+ *           description: 店舗名
+ *         latitude:
+ *           type: number
+ *           format: float
+ *           description: 緯度
+ *         longitude:
+ *           type: number
+ *           format: float
+ *           description: 経度
+ *   responses:
+ *      StoreNotFound:
+ *          description: 指定された店舗が見つかりません。
+ *          content:
+ *            application/json:
+ *              schema:
+ *                type: object
+ *                properties:
+ *                  success:
+ *                    type: boolean
+ *                    example: false
+ *                  error:
+ *                    type: string
+ *                    example: 店舗が見つかりません
+ */
+
 import { Router } from "express";
 import { StoreController } from "../controllers/storeController";
 import { storeValidationRules } from "../middlewares/validation";
@@ -5,60 +60,234 @@ import { createHandler } from "../utils/routeHandler";
 
 const storeRouter = Router()
 
-
 /**
- * 店舗情報テーブル追加エンドポイント
- * 指定されたデータをデータベースに保存する
- * リクエストボディからデータを取得する。
- * @param {object} req.body - 保存するテキスト値
- * @returns {object} 作成結果とステータス情報
+ * @swagger
+ * /stores:
+ *   post:
+ *     tags:
+ *       - Stores
+ *     summary: 新規店舗登録
+ *     description: 新しい店舗情報を登録します。住所から緯度経度を自動計算して保存します。
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Store'
+ *     responses:
+ *       '201':
+ *         description: 店舗が正常に作成されました。
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Store'
+ *       '400':
+ *         description: リクエストが無効です。
+ *       '500':
+ *         description: サーバーエラー。
  */
 storeRouter.post('/', storeValidationRules, createHandler(StoreController, "createStore"))
 
 /**
- * 店舗情報取得エンドポイント
- * 指定されたIDの店舗情報を取得する
- * @param {string} req.params.id - 取得対象の店舗ID
- * @returns {object} 店舗情報とステータス情報
+ * @swagger
+ * /stores/{id}:
+ *   get:
+ *     tags:
+ *       - Stores
+ *     summary: 店舗情報取得
+ *     description: 指定されたIDの店舗情報を取得します。
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 店舗ID
+ *     responses:
+ *       '200':
+ *         description: 正常に店舗情報を取得しました。
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Store'
+ *       '404':
+ *         $ref: '#/components/responses/StoreNotFound'
  */
 storeRouter.get('/:id', createHandler(StoreController, 'getStoreById'))
 
 /**
- * 全店舗情報取得エンドポイント
- * データベースに登録されている全ての店舗情報を取得する
- * @returns {Array<object>} 店舗情報の配列とステータス情報
+ * @swagger
+ * /stores:
+ *   get:
+ *     tags:
+ *       - Stores
+ *     summary: 全店舗情報取得
+ *     description: データベースに登録されている全ての店舗情報を取得します。
+ *     responses:
+ *       '200':
+ *         description: 正常に全店舗情報を取得しました。
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Store'
  */
 storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
 
 /**
- * 店舗情報更新エンドポイント
- * 指定されたIDの店舗情報を更新する
- * @param {string} req.params.id - 更新対象の店舗ID
- * @param {object} req.body - 更新するデータ
- * @returns {object} 更新結果とステータス情報
+ * @swagger
+ * /stores/{id}:
+ *   put:
+ *     tags:
+ *       - Stores
+ *     summary: 店舗情報更新
+ *     description: 指定されたIDの店舗情報を更新します。
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 店舗ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Store'
+ *     responses:
+ *       '200':
+ *         description: 正常に店舗情報を更新しました。
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Store'
+ *       '400':
+ *         description: リクエストが無効です。
+ *       '404':
+ *         $ref: '#/components/responses/StoreNotFound'
  */
 storeRouter.put('/:id', storeValidationRules, createHandler(StoreController, 'updateStore'))
 
 /**
- * 店舗営業状態変更エンドポイント
- * 指定された店舗の営業状態を「閉店」に変更する
- * @param {string} req.params.id - 対象店舗ID
- * @returns {object} 変更結果とステータス情報
+ * @swagger
+ * /stores/{id}/close:
+ *   patch:
+ *     tags:
+ *       - Stores
+ *     summary: 店舗を閉店済みにする
+ *     description: 指定された店舗の営業状態を「閉店」に変更します。
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 店舗ID
+ *     responses:
+ *       '200':
+ *         description: 正常に店舗を閉店済みにしました。
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       '404':
+ *         $ref: '#/components/responses/StoreNotFound'
  */
 storeRouter.patch('/:id/close', createHandler(StoreController, 'storeClose'))
 
 /**
- * 店舗別トッピングコール情報取得エンドポイント
- * 指定された店舗のトッピングコール情報を取得する
- * @param {string} req.params.id - 対象店舗ID
- * @returns {Array<object>} トッピングコール情報の配列とステータス情報
+ * @swagger
+ * /stores/{id}/toppingcalls:
+ *   get:
+ *     tags:
+ *       - Stores
+ *     summary: 店舗のトッピングコール情報取得
+ *     description: 指定された店舗のトッピングコール情報を取得します。
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 店舗ID
+ *     responses:
+ *       '200':
+ *         description: 正常にトッピングコール情報を取得しました。
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                      type: object
+ *                      properties:
+ *                        topping_id:
+ *                          type: integer
+ *                        call_name:
+ *                          type: string
+ *       '404':
+ *         $ref: '#/components/responses/StoreNotFound'
  */
 storeRouter.get('/:id/toppingcalls', createHandler(StoreController, 'getStoreToppingCalls'))
 
 /**
- * マップ情報取得エンドポイント
- * 全ての店舗の位置情報を取得する
- * @returns {Array<object>} 位置情報を含む店舗データの配列とステータス情報
+ * @swagger
+ * /map:
+ *   get:
+ *     tags:
+ *       - Map
+ *     summary: 全店舗のマップ情報取得
+ *     description: 全ての店舗の位置情報（緯度経度）を取得します。
+ *     responses:
+ *       '200':
+ *         description: 正常にマップ情報を取得しました。
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Map'
  */
 const mapRouter = Router()
 mapRouter.get('/', createHandler(StoreController, 'getMapAll'))

@@ -3,6 +3,78 @@ import { ValidationError } from "express-validator";
 import { Store, Map, StoreToppingCall, Prisma } from "@prisma/client";
 
 /**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Store:
+ *       type: object
+ *       required:
+ *         - store_name
+ *         - address
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 店舗ID
+ *         store_name:
+ *           type: string
+ *           description: 店舗名
+ *         post_code:
+ *           type: string
+ *           description: 郵便番号
+ *         address:
+ *           type: string
+ *           description: 住所
+ *         phone_number:
+ *           type: string
+ *           description: 電話番号
+ *         latitude:
+ *           type: number
+ *           format: float
+ *           description: 緯度
+ *         longitude:
+ *           type: number
+ *           format: float
+ *           description: 経度
+ *         is_close:
+ *           type: boolean
+ *           description: 閉店フラグ
+ *     Map:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 店舗ID
+ *         store_name:
+ *           type: string
+ *           description: 店舗名
+ *         latitude:
+ *           type: number
+ *           format: float
+ *           description: 緯度
+ *         longitude:
+ *           type: number
+ *           format: float
+ *           description: 経度
+ *         is_close:
+ *           type: boolean
+ *           description: 閉店フラグ
+ *   responses:
+ *      StoreNotFound:
+ *          description: 指定された店舗が見つかりません。
+ *          content:
+ *            application/json:
+ *              schema:
+ *                type: object
+ *                properties:
+ *                  success:
+ *                    type: boolean
+ *                    example: false
+ *                  error:
+ *                    type: string
+ *                    example: 店舗が見つかりません
+ */
+
+/**
  * 店舗データの型定義
  */
 export type CallTiming = 'pre_call' | 'post_call';
