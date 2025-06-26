@@ -25,7 +25,11 @@ export class UserService {
             })
             return user
         } catch (error) {
-            this.logger.error({ error, userId: data.uid }, 'ユーザー情報の作成に失敗しました')
+            this.logger.error({
+                error,
+                userId: data.uid,
+                stack: error instanceof Error ? error.stack : undefined
+            }, 'ユーザー情報の作成に失敗しました')
             // Prismaエラーハンドリング
             if (error instanceof Error && 'code' in error) {
                 if (error.code === 'P2002') {
@@ -46,7 +50,7 @@ export class UserService {
             })
             return user
         } catch (error) {
-            this.logger.error({ error }, 'ユーザー情報の取得に失敗しました')
+            this.logger.error({ error, method: 'getIdToken' }, 'ユーザー情報の取得に失敗しました')
             throw new Error('ユーザー情報の取得に失敗しました')
         }
     }
