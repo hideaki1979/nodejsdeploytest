@@ -20,7 +20,7 @@
  *           example: 'Taro Yamada'
  *         authProvider:
  *           type: string
- *           description: 認証プロバイダー (例: google, firebase)
+ *           description: 認証プロバイダー
  *           example: 'google.com'
  *         bio:
  *           type: string
