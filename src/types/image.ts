@@ -30,15 +30,15 @@ import { Image, ImageStoreToppingCall } from "@prisma/client";
  *           type: array
  *           items:
  *             type: object
- *              properties:
- *                topping_id:
- *                  type: integer
- *                topping_name:
- *                  type: string
- *                call_option_id:
- *                  type: integer
- *                call_option_name:
- *                  type: string
+ *             properties:
+ *               topping_id:
+ *                 type: integer
+ *               topping_name:
+ *                 type: string
+ *               call_option_id:
+ *                 type: integer
+ *               call_option_name:
+ *                 type: string
  *     ImageUpdate:
  *       type: object
  *       properties:
