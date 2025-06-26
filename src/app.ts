@@ -18,6 +18,8 @@ import { PrismaClient } from '@prisma/client'
 import { container } from 'tsyringe'
 import { GOOGLE_MAP_API_KEY, PRISMA_CLIENT } from './di.token'
 import helmet from 'helmet'
+import swaggerUi from 'swagger-ui-express'
+import { swaggerSpec } from './config/swagger'
 
 /**
  * PrismaClientのインスタンスをDIコンテナに登録
@@ -48,6 +50,12 @@ setupBigIntSerialization()
  * HTTPサーバーの基盤となるアプリケーションオブジェクト
  */
 const app = express()
+
+/**
+ * Swagger UI のセットアップ
+ * /api-docs エンドポイントで API 仕様書を閲覧できるようにする
+ */
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 /**
  * アプリケーションのセキュリティを強化するため、helmetミドルウェアを適用します。

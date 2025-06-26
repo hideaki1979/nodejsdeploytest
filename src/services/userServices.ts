@@ -13,7 +13,7 @@ export class UserService {
     async createUser(data: User) {
         try {
             const userData = {
-                id: data.uid,
+                id: data.id,
                 display_name: data.displayName,
                 email: data.email,
                 provider: data.authProvider
