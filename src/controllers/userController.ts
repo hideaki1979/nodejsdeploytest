@@ -11,7 +11,7 @@ export class UserController {
 
     constructor(
         private userService: UserService,
-        @inject(pinoLogger) private logger?: Logger
+        @inject(pinoLogger) private logger: Logger
     ) { }
 
     async createUser(req: Request, res: Response) {
@@ -37,13 +37,19 @@ export class UserController {
         // Firebaseのuidの検証
         const uid = req.params.uid
         if (!uid) {
-            this.logger?.error({ err: '認証トークンID未設定エラー' }, '認証トークンIDが設定されてません')
+            this.logger?.error({
+                error: new Error('認証トークンID未設定エラー'),
+                endpoint: req.originalUrl
+            }, '認証トークンIDが設定されてません')
             throw new AppError('認証トークンIDが設定されてません', 401)
         }
 
         const result = await this.userService.getIdToken(uid)
         if (!result) {
-            this.logger?.error({ err: 'ユーザー未存在エラー' }, '該当するユーザーが存在しません')
+            this.logger?.error({
+                error: new Error('ユーザー未存在エラー'),
+                uid: uid
+            }, '該当するユーザーが存在しません')
             throw new AppError('該当するユーザーが存在しません', 404)
         }
 
