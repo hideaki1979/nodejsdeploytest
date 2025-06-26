@@ -1,12 +1,11 @@
 import swaggerJSDoc from 'swagger-jsdoc';
-import { version } from '../../package.json';
 
 const options: swaggerJSDoc.Options = {
     definition: {
         openapi: '3.0.3',
         info: {
             title: 'J-Navi Backend(Node.js(Express))',
-            version,
+            version: "1.0.0",
             description: 'A simple CRUD API application made with Express and documented with Swagger',
             license: {
                 name: 'MIT',
