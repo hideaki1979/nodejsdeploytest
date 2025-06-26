@@ -50,8 +50,9 @@ setupBigIntSerialization()
 const app = express()
 
 /**
- * アプリケーションのセキュリティを向上させるためのhelmetミドルウェアを適用
- * HTTPヘッダーを適切に設定し、様々な脆弱性から保護する
+ * アプリケーションのセキュリティを強化するため、helmetミドルウェアを適用します。
+ * これにより、Content-Security-Policy、X-Frame-OptionsなどのHTTPヘッダーが設定され、
+ * クロスサイトスクリプティング(XSS)やクリックジャッキングなどの攻撃から保護します。
  */
 app.use(helmet())
 
