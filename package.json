@@ -28,6 +28,8 @@
     "node-geocoder": "^4.4.1",
     "pg": "^8.13.3",
     "reflect-metadata": "^0.2.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "tsyringe": "^4.10.0",
     "uuid": "^11.1.0"
   },
@@ -36,6 +38,8 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^10.0.0",
     "concurrently": "^9.1.2",
     "cross-env": "^7.0.3",

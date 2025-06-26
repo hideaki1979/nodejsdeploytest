@@ -7,19 +7,72 @@ import { userValidationRules } from "../middlewares/userValidation";
 const userRouter = Router()
 
 /**
- * ユーザー作成エンドポイント
- * 新しいユーザーを作成する
- * @param {object} req.body - ユーザー情報
- * @returns {object} 作成されたユーザー情報とステータス情報
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: ユーザー情報の登録・取得
+ */
+
+/**
+ * @swagger
+ * /users:
+ *   post:
+ *     summary: 新規ユーザーの作成
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserInput'
+ *     responses:
+ *       '201':
+ *         description: ユーザーが正常に作成されました
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       '400':
+ *         description: 不正な入力です
+ *       '401':
+ *         description: 認証エラー
+ *       '500':
+ *         description: サーバーエラー
  */
 userRouter.post(`/`, authenticateUser, userValidationRules, (req: Request, res: Response, next: NextFunction) =>
     container.resolve(UserController).createUser(req, res).catch(next)
 )
+
 /**
- * ユーザー情報取得エンドポイント
- * 指定されたUIDのユーザー情報を取得する
- * @param {string} req.params.uid - 取得対象のユーザーUID
- * @returns {object} ユーザー情報とステータス情報
+ * @swagger
+ * /users/{uid}:
+ *   get:
+ *     summary: ユーザー情報の取得
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: uid
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ユーザーID
+ *     responses:
+ *       '200':
+ *         description: ユーザー情報
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       '401':
+ *         description: 認証エラー
+ *       '404':
+ *         description: ユーザーが見つかりません
+ *       '500':
+ *         description: サーバーエラー
  */
 userRouter.get('/:uid', authenticateUser, (req: Request, res: Response, next: NextFunction) =>
     container.resolve(UserController).getUserByUid(req, res).catch(next)
