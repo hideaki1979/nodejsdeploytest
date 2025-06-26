@@ -16,7 +16,7 @@ import './config/firebase'
 import { AppError, errorMiddleware } from './middlewares/errorMiddleware'
 import { PrismaClient } from '@prisma/client'
 import { container } from 'tsyringe'
-import { PRISMA_CLIENT } from './di.token'
+import { GOOGLE_MAP_API_KEY, PRISMA_CLIENT } from './di.token'
 
 /**
  * PrismaClientのインスタンスをDIコンテナに登録
@@ -30,6 +30,11 @@ const prisma = new PrismaClient({
   }
 })
 container.registerInstance(PRISMA_CLIENT, prisma)
+
+/**
+ * Google Maps APIキーをDIコンテナに登録
+ */
+container.register(GOOGLE_MAP_API_KEY, { useValue: config.google.mapsApiKey })
 
 /**
  * BigInt型のJSONシリアライズをサポートするための拡張を設定
