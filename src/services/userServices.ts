@@ -1,13 +1,15 @@
 import { inject, injectable } from "tsyringe";
 import { User } from "../types/user";
 import { PrismaClient } from "@prisma/client";
-import { PRISMA_CLIENT } from "../di.token";
+import { pinoLogger, PRISMA_CLIENT } from "../di.token";
+import { Logger } from "pino";
 
 @injectable()
 export class UserService {
 
     constructor(
-        @inject(PRISMA_CLIENT) private prisma: PrismaClient
+        @inject(PRISMA_CLIENT) private prisma: PrismaClient,
+        @inject(pinoLogger) private logger: Logger
     ) { }
 
     async createUser(data: User) {
@@ -23,8 +25,7 @@ export class UserService {
             })
             return user
         } catch (error) {
-            console.error('ユーザー作成エラー:', error)
-
+            this.logger.error({ error }, 'ユーザー情報の作成に失敗しました')
             // Prismaエラーハンドリング
             if (error instanceof Error && 'code' in error) {
                 if (error.code === 'P2002') {
@@ -45,7 +46,7 @@ export class UserService {
             })
             return user
         } catch (error) {
-            console.error('ユーザー取得エラー:', error)
+            this.logger.error({ error }, 'ユーザー情報の取得に失敗しました')
             throw new Error('ユーザー情報の取得に失敗しました')
         }
     }
