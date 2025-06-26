@@ -16,10 +16,12 @@ import './config/firebase'
 import { AppError, errorMiddleware } from './middlewares/errorMiddleware'
 import { PrismaClient } from '@prisma/client'
 import { container } from 'tsyringe'
-import { GOOGLE_MAP_API_KEY, PRISMA_CLIENT } from './di.token'
+import { GOOGLE_MAP_API_KEY, pinoLogger, PRISMA_CLIENT } from './di.token'
 import helmet from 'helmet'
 import swaggerUi from 'swagger-ui-express'
 import { swaggerSpec } from './config/swagger'
+import logger from './config/logger'
+import { pinoHttp } from 'pino-http'
 
 /**
  * PrismaClientのインスタンスをDIコンテナに登録
@@ -50,6 +52,13 @@ setupBigIntSerialization()
  * HTTPサーバーの基盤となるアプリケーションオブジェクト
  */
 const app = express()
+
+// DIコンテナにロガーを登録
+container.register(pinoLogger, { useValue: logger })
+
+// pino-http ミドルウェアを適用
+// 必ず他のルートやミドルウェアより先に適用してください。
+app.use(pinoHttp({ logger }))
 
 /**
  * Swagger UI のセットアップ
