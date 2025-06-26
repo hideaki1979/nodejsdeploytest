@@ -17,6 +17,7 @@ import { AppError, errorMiddleware } from './middlewares/errorMiddleware'
 import { PrismaClient } from '@prisma/client'
 import { container } from 'tsyringe'
 import { GOOGLE_MAP_API_KEY, PRISMA_CLIENT } from './di.token'
+import helmet from 'helmet'
 
 /**
  * PrismaClientのインスタンスをDIコンテナに登録
@@ -47,6 +48,12 @@ setupBigIntSerialization()
  * HTTPサーバーの基盤となるアプリケーションオブジェクト
  */
 const app = express()
+
+/**
+ * アプリケーションのセキュリティを向上させるためのhelmetミドルウェアを適用
+ * HTTPヘッダーを適切に設定し、様々な脆弱性から保護する
+ */
+app.use(helmet())
 
 /**
  * アプリケーション全体で使用するミドルウェアを定義
