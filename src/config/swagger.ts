@@ -5,7 +5,7 @@ const options: swaggerJSDoc.Options = {
         openapi: '3.0.3',
         info: {
             title: 'J-Navi Backend(Node.js(Express))',
-            version: "1.0.0",
+            version: process.env.npm_package_version || '1.0.0',
             description: 'A simple CRUD API application made with Express and documented with Swagger',
             license: {
                 name: 'MIT',
