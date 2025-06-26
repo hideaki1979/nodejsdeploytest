@@ -3,6 +3,78 @@ import { ValidationError } from "express-validator";
 import { Store, Map, StoreToppingCall, Prisma } from "@prisma/client";
 
 /**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Store:
+ *       type: object
+ *       required:
+ *         - store_name
+ *         - address
+ *         - business_hours
+ *         - regular_holidays
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 店舗ID
+ *         store_name:
+ *           type: string
+ *           description: 店舗名
+ *         branch_name:
+ *           type: string
+ *           description: 支店名
+ *         address:
+ *           type: string
+ *           description: 住所
+ *         business_hours:
+ *           type: string
+ *           description: 営業時間
+ *         regular_holidays:
+ *           type: string
+ *           description: 定休日
+ *         prior_meal_voucher:
+ *           type: boolean
+ *           description: 事前食券購入の有無
+ *         is_close:
+ *           type: boolean
+ *           description: 閉店フラグ
+ *     Map:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 店舗ID
+ *         store_name:
+ *           type: string
+ *           description: 店舗名
+ *         latitude:
+ *           type: number
+ *           format: float
+ *           description: 緯度
+ *         longitude:
+ *           type: number
+ *           format: float
+ *           description: 経度
+ *         is_close:
+ *           type: boolean
+ *           description: 閉店フラグ
+ *   responses:
+ *      StoreNotFound:
+ *          description: 指定された店舗が見つかりません。
+ *          content:
+ *            application/json:
+ *              schema:
+ *                type: object
+ *                properties:
+ *                  success:
+ *                    type: boolean
+ *                    example: false
+ *                  error:
+ *                    type: string
+ *                    example: 店舗が見つかりません
+ */
+
+/**
  * 店舗データの型定義
  */
 export type CallTiming = 'pre_call' | 'post_call';

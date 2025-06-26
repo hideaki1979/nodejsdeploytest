@@ -1,6 +1,71 @@
 import { ValidationError } from "express-validator";
 import { Image, ImageStoreToppingCall } from "@prisma/client";
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Image:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 画像ID
+ *         image_url:
+ *           type: string
+ *           description: 画像のURL
+ *         user_id:
+ *           type: string
+ *           description: 投稿したユーザーのID
+ *         store_id:
+ *           type: integer
+ *           description: 関連する店舗のID
+ *         menu_type:
+ *           type: integer
+ *           description: メニュータイプ
+ *         menu_name:
+ *           type: string
+ *           description: メニュー名
+ *         topping_calls:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               topping_id:
+ *                 type: integer
+ *               topping_name:
+ *                 type: string
+ *               call_option_id:
+ *                 type: integer
+ *               call_option_name:
+ *                 type: string
+ *     ImageUpdate:
+ *       type: object
+ *       properties:
+ *         image_url:
+ *           type: string
+ *           description: 画像の新しいURL
+ *   responses:
+ *      ImageNotFound:
+ *          description: 指定された画像が見つかりません。
+ *          content:
+ *            application/json:
+ *              schema:
+ *                type: object
+ *                properties:
+ *                  success:
+ *                    type: boolean
+ *                    example: false
+ *                  error:
+ *                    type: string
+ *                    example: 画像が見つかりません
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ */
+
 // StoreImageUploadData インターフェースの追加
 export interface StoreImageUploadData {
     store_id: number | string;
