@@ -1,8 +1,9 @@
-import { NextFunction, Request, Response, Router } from "express"
-import { container } from "tsyringe"
+import { Router } from "express"
 import { ImageController } from "../controllers/imageController"
 import { imageGetValidationRules, imageUpdateValidationRules, imageUploadValidationRules } from "../middlewares/imageValidation"
 import { authenticateUser } from "../middlewares/authMiddleware"
+import { handleValidationErrors } from "../middlewares/validationMiddleware"
+import { createHandler } from "../utils/routeHandler"
 
 const imageRouter = Router({ mergeParams: true })
 
@@ -55,9 +56,7 @@ const imageRouter = Router({ mergeParams: true })
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
-imageRouter.post('/', authenticateUser, imageUploadValidationRules, (req: Request, res: Response, next: NextFunction) =>
-    container.resolve(ImageController).uploadStoreImage(req, res).catch(next)
-)
+imageRouter.post('/', authenticateUser, imageUploadValidationRules, handleValidationErrors, createHandler(ImageController, 'uploadStoreImage'))
 /**
  * @swagger
  * /stores/{storeId}/images:
@@ -91,9 +90,7 @@ imageRouter.post('/', authenticateUser, imageUploadValidationRules, (req: Reques
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
-imageRouter.get(`/`, imageGetValidationRules, (req: Request, res: Response, next: NextFunction) =>
-    container.resolve(ImageController).getStoreImages(req, res).catch(next)
-)
+imageRouter.get(`/`, imageGetValidationRules, handleValidationErrors, createHandler(ImageController, 'getStoreImages'))
 /**
  * @swagger
  * /stores/{storeId}/images/{imageId}:
@@ -131,9 +128,7 @@ imageRouter.get(`/`, imageGetValidationRules, (req: Request, res: Response, next
  *       '404':
  *         $ref: '#/components/responses/ImageNotFound'
  */
-imageRouter.get(`/:imageId`, imageGetValidationRules, (req: Request, res: Response, next: NextFunction) =>
-    container.resolve(ImageController).getImageByImageId(req, res).catch(next)
-)
+imageRouter.get(`/:imageId`, imageGetValidationRules, handleValidationErrors, createHandler(ImageController, 'getImageByImageId'))
 /**
  * @swagger
  * /stores/{storeId}/images/{imageId}:
@@ -187,9 +182,7 @@ imageRouter.get(`/:imageId`, imageGetValidationRules, (req: Request, res: Respon
  *       '404':
  *         $ref: '#/components/responses/ImageNotFound'
  */
-imageRouter.put(`/:imageId`, authenticateUser, imageUpdateValidationRules, (req: Request, res: Response, next: NextFunction) =>
-    container.resolve(ImageController).updateStoreImage(req, res).catch(next)
-)
+imageRouter.put(`/:imageId`, authenticateUser, imageUpdateValidationRules, handleValidationErrors, createHandler(ImageController, 'updateStoreImage'))
 /**
  * @swagger
  * /stores/{storeId}/images/{imageId}:
@@ -231,7 +224,5 @@ imageRouter.put(`/:imageId`, authenticateUser, imageUpdateValidationRules, (req:
  *       '404':
  *         $ref: '#/components/responses/ImageNotFound'
  */
-imageRouter.delete(`/:imageId`, authenticateUser, imageGetValidationRules, (req: Request, res: Response, next: NextFunction) =>
-    container.resolve(ImageController).deleteStoreImage(req, res).catch(next)
-)
+imageRouter.delete(`/:imageId`, authenticateUser, imageGetValidationRules, handleValidationErrors, createHandler(ImageController, 'deleteStoreImage'))
 export { imageRouter }

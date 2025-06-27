@@ -3,6 +3,8 @@ import { UserController } from "../controllers/userController";
 import { container } from "tsyringe";
 import { authenticateUser } from "../middlewares/authMiddleware";
 import { userValidationRules } from "../middlewares/userValidation";
+import { handleValidationErrors } from "../middlewares/validationMiddleware";
+import { createHandler } from "../utils/routeHandler";
 
 const userRouter = Router()
 
@@ -41,8 +43,7 @@ const userRouter = Router()
  *       '500':
  *         description: サーバーエラー
  */
-userRouter.post(`/`, authenticateUser, userValidationRules, (req: Request, res: Response, next: NextFunction) =>
-    container.resolve(UserController).createUser(req, res).catch(next)
+userRouter.post(`/`, authenticateUser, userValidationRules, handleValidationErrors, createHandler(UserController, 'createUser')
 )
 
 /**
@@ -74,7 +75,5 @@ userRouter.post(`/`, authenticateUser, userValidationRules, (req: Request, res: 
  *       '500':
  *         description: サーバーエラー
  */
-userRouter.get('/:uid', authenticateUser, (req: Request, res: Response, next: NextFunction) =>
-    container.resolve(UserController).getUserByUid(req, res).catch(next)
-)
+userRouter.get('/:uid', authenticateUser, createHandler(UserController, 'getUserByUid'))
 export { userRouter }

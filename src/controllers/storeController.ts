@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import { validationResult } from "express-validator";
 import { StoreService } from "../services/storeServices";
 import { FormattedToppingOptionNameStoreData, StoreToppingCallFilter } from "../types/store";
 import { AppError } from "../middlewares/errorMiddleware";
@@ -29,17 +28,6 @@ export class StoreController {
    * @param res レスポンスオブジェクト
    */
     async createStore(req: Request, res: Response): Promise<void> {
-        // バリデーションエラーの確認
-        const errors = validationResult(req)
-        // バリデーションエラーの場合はエラーで返す
-        if (!errors.isEmpty()) {
-            this.logger.error({ errors }, "バリデーションエラー発生")
-            res.status(400).json({
-                success: false,
-                errors: errors.array()
-            })
-            return
-        }
         // サービスクラスで店舗情報登録を実施
         const result = await this.storeService.createStore(req.body)
 
@@ -57,18 +45,6 @@ export class StoreController {
      * @param res レスポンスオブジェクト
      */
     async updateStore(req: Request, res: Response): Promise<void> {
-        // バリデーションエラーの確認
-        const errors = validationResult(req)
-
-        if (!errors.isEmpty()) {
-            this.logger.error({ errors }, "バリデーションエラー発生")
-            console.error("バリデーションエラー")
-            res.status(400).json({
-                success: false,
-                errors: errors.array()
-            })
-            return
-        }
 
         const storeId = Number(req.params.id)
         const result = await this.storeService.updateStore(storeId, req.body)

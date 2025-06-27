@@ -1,11 +1,8 @@
 import { Request, Response } from "express";
 import { ImageService } from "../services/imageService";
-import { validationResult } from "express-validator";
 import { StoreImageUploadData } from "../types/image";
 import { getAuthenticatedUserid } from "../utils/auth";
-import { autoInjectable, inject } from "tsyringe";
-import { pinoLogger } from "../di.token";
-import { Logger } from "pino";
+import { autoInjectable } from "tsyringe";
 
 @autoInjectable()
 export class ImageController {
@@ -16,7 +13,6 @@ export class ImageController {
      */
     constructor(
         private imageService: ImageService,
-        @inject(pinoLogger) private logger: Logger
     ) { }
 
     /**
@@ -25,19 +21,6 @@ export class ImageController {
      * @param res レスポンスオブジェクト
      */
     async uploadStoreImage(req: Request, res: Response): Promise<void> {
-        // バリデーションエラーの確認
-        const errors = validationResult(req)
-
-        // バリデーションエラーがある場合はエラーレスポンスを返す
-        if (!errors.isEmpty()) {
-            this.logger.error({ errors }, 'バリデーションエラー発生')
-            res.status(400).json({
-                success: false,
-                message: 'バリデーションエラー',
-                errors: errors.array()
-            })
-            return
-        }
 
         const imageData: StoreImageUploadData = req.body
 
@@ -70,20 +53,6 @@ export class ImageController {
     }
 
     async getImageByImageId(req: Request, res: Response): Promise<void> {
-        // バリデーションエラーの確認
-        const errors = validationResult(req)
-
-        // バリデーションエラーがある場合はエラーレスポンスを返す
-        if (!errors.isEmpty()) {
-            this.logger.error({ errors }, 'バリデーションエラー発生')
-            res.status(400).json({
-                success: false,
-                message: 'バリデーションエラー',
-                errors: errors.array()
-            })
-            return
-        }
-
         // パラメータから店舗IDと画像IDを取得
         const storeId = req.params.storeId
         const imageId = req.params.imageId
@@ -99,19 +68,6 @@ export class ImageController {
     }
 
     async updateStoreImage(req: Request, res: Response) {
-        // バリデーションエラーの確認
-        const errors = validationResult(req)
-
-        // バリデーションエラーがある場合はエラーレスポンスを返す
-        if (!errors.isEmpty()) {
-            this.logger.error({ errors }, 'バリデーションエラー発生')
-            res.status(400).json({
-                success: false,
-                message: '画像更新のバリデーションエラーが発生しました',
-                errors: errors.array()
-            })
-            return
-        }
 
         // パラメータから店舗IDと画像IDを取得
         const storeId = req.params.storeId
@@ -137,20 +93,6 @@ export class ImageController {
     async deleteStoreImage(req: Request, res: Response) {
 
         const userId = getAuthenticatedUserid(req)
-
-        // バリデーションエラーの確認
-        const errors = validationResult(req)
-
-        // バリデーションエラーがある場合はエラーレスポンスを返す
-        if (!errors.isEmpty()) {
-            this.logger.error({ errors }, 'バリデーションエラー発生')
-            res.status(400).json({
-                success: false,
-                message: '画像削除のバリデーションエラーが発生しました',
-                errors: errors.array()
-            })
-            return
-        }
 
         // パラメータから店舗IDと画像IDを取得
         const storeId = req.params.storeId

@@ -25,9 +25,7 @@ export class ImageService {
         // トランザクションで処理することで、データの整合性を担保
         return await this.prisma.$transaction(async (tx) => {
             // Base64画像データをバッファに変換
-            // console.log("base64：", data.image_base64)
             const matches = data.image_base64!.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
-            // console.log("matches：", matches)
             if (!matches || matches.length !== 3) {
                 this.logger.error({ matches }, '不正画像データエラー発生')
                 throw new Error('無効な画像データ形式です');
@@ -398,7 +396,7 @@ export class ImageService {
         const match = imageUrl.match(urlPattern)
 
         if (!match || !match[1]) {
-            this.logger.error('画像URL不正エラー発生')
+            this.logger.error({ imageUrl }, '画像URL不正エラー発生')
             throw new Error('無効な画像URLです')
         }
 
@@ -412,7 +410,6 @@ export class ImageService {
             await file.delete()
         } else {
             this.logger.warn({ filePath }, 'Firebase Storage 画像未存在失敗')
-            console.warn(`削除対象のファイルが存在しません: ${filePath}`)
         }
     }
 
@@ -428,7 +425,7 @@ export class ImageService {
         })
 
         if (!image) {
-            this.logger.error('指定画像未存在エラー発生')
+            this.logger.error({ imageId }, '指定画像未存在エラー発生')
             throw new AppError('指定された画像情報が存在しません', 404)
         }
         if (image.user_id !== userId) throw new AppError('この画像を削除する権限がありません', 403)
