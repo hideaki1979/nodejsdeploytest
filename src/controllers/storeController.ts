@@ -118,7 +118,7 @@ export class StoreController {
 
         // パラメータのバリデーション
         if (!id || isNaN(id)) {
-            this.logger.error({ StoreId: id }, '店舗ID不正値エラー')
+            this.logger.error({ storeId: id }, '店舗ID不正値エラー')
             throw new AppError('有効な店舗IDを指定してください', 400)
         }
 
