@@ -3,7 +3,9 @@ import { ImageService } from "../services/imageService";
 import { validationResult } from "express-validator";
 import { StoreImageUploadData } from "../types/image";
 import { getAuthenticatedUserid } from "../utils/auth";
-import { autoInjectable } from "tsyringe";
+import { autoInjectable, inject } from "tsyringe";
+import { pinoLogger } from "../di.token";
+import { Logger } from "pino";
 
 @autoInjectable()
 export class ImageController {
@@ -12,7 +14,10 @@ export class ImageController {
      * コントローラーの初期化
      * 依存するサービスをコンストラクタインジェクションで注入
      */
-    constructor(private imageService: ImageService) { }
+    constructor(
+        private imageService: ImageService,
+        @inject(pinoLogger) private logger: Logger
+    ) { }
 
     /**
      * 店舗の画像をアップロードして保存する
@@ -25,6 +30,7 @@ export class ImageController {
 
         // バリデーションエラーがある場合はエラーレスポンスを返す
         if (!errors.isEmpty()) {
+            this.logger.error({ errors }, 'バリデーションエラー発生')
             res.status(400).json({
                 success: false,
                 message: 'バリデーションエラー',
@@ -69,6 +75,7 @@ export class ImageController {
 
         // バリデーションエラーがある場合はエラーレスポンスを返す
         if (!errors.isEmpty()) {
+            this.logger.error({ errors }, 'バリデーションエラー発生')
             res.status(400).json({
                 success: false,
                 message: 'バリデーションエラー',
@@ -97,6 +104,7 @@ export class ImageController {
 
         // バリデーションエラーがある場合はエラーレスポンスを返す
         if (!errors.isEmpty()) {
+            this.logger.error({ errors }, 'バリデーションエラー発生')
             res.status(400).json({
                 success: false,
                 message: '画像更新のバリデーションエラーが発生しました',
@@ -135,6 +143,7 @@ export class ImageController {
 
         // バリデーションエラーがある場合はエラーレスポンスを返す
         if (!errors.isEmpty()) {
+            this.logger.error({ errors }, 'バリデーションエラー発生')
             res.status(400).json({
                 success: false,
                 message: '画像削除のバリデーションエラーが発生しました',

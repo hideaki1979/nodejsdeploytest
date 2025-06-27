@@ -4,7 +4,8 @@ import { GeocodingService } from "./geocodingService"
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "../types/toppingCallOption";
 import { AppError } from "../middlewares/errorMiddleware";
 import { inject, injectable } from "tsyringe";
-import { PRISMA_CLIENT } from "../di.token";
+import { pinoLogger, PRISMA_CLIENT } from "../di.token";
+import { Logger } from "pino";
 
 /**
  * 店舗情報に関するビジネスロジックを提供するサービスクラス
@@ -14,7 +15,8 @@ export class StoreService {
 
     constructor(
         @inject(PRISMA_CLIENT) private prisma: PrismaClient,
-        @inject(GeocodingService) private geoCodingService: GeocodingService
+        @inject(GeocodingService) private geoCodingService: GeocodingService,
+        @inject(pinoLogger) private logger: Logger
     ) { }
     /**
    * 店舗情報とマップ情報を同時に登録する
@@ -208,6 +210,7 @@ export class StoreService {
             }
         })
         if (!store) {
+            this.logger.error({ storeId }, '店舗未存在エラー発生')
             throw new AppError(`ID: ${storeId} の店舗は見つかりませんでした`, 404)
         }
 
@@ -394,6 +397,7 @@ export class StoreService {
             }
         })
         if (!storeToppingCalls) {
+            this.logger.error({ storeId }, '店舗トッピングコール情報未存在エラー発生')
             throw new AppError(`ID: ${storeId}の店舗は存在しません。`, 404)
         }
 

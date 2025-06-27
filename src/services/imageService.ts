@@ -4,13 +4,15 @@ import { bucket } from "../config/firebase";
 import { Image, Prisma, PrismaClient } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
 import { AppError } from "../middlewares/errorMiddleware";
-import { PRISMA_CLIENT } from "../di.token";
+import { pinoLogger, PRISMA_CLIENT } from "../di.token";
+import { Logger } from "pino";
 
 @injectable()
 export class ImageService {
 
     constructor(
-        @inject(PRISMA_CLIENT) private prisma: PrismaClient
+        @inject(PRISMA_CLIENT) private prisma: PrismaClient,
+        @inject(pinoLogger) private logger: Logger
     ) { }
 
     /**
@@ -27,6 +29,7 @@ export class ImageService {
             const matches = data.image_base64!.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
             // console.log("matches：", matches)
             if (!matches || matches.length !== 3) {
+                this.logger.error({ matches }, '不正画像データエラー発生')
                 throw new Error('無効な画像データ形式です');
             }
 
@@ -178,6 +181,7 @@ export class ImageService {
         })
 
         if (!image) {
+            this.logger.error('画像未存在エラー発生')
             throw new AppError('指定された画像情報が存在しません', 404)
         }
 
@@ -216,6 +220,7 @@ export class ImageService {
                 // Base64画像データをバッファに変換
                 const matches = data.image_base64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
                 if (!matches || matches.length !== 3) {
+                    this.logger.error({ matches }, '不正画像データエラー発生')
                     throw new AppError('無効な画像データ形式です', 400)
                 }
 
@@ -252,7 +257,7 @@ export class ImageService {
                     await this.deleteImageFromStorage(currentImage.image_url)
                 } catch (deleteError) {
                     // 旧画像の削除に失敗してもメイン処理は継続する
-                    console.warn('旧画像の削除に失敗しました:', deleteError)
+                    this.logger.warn({ deleteError }, 'Firebase Storage 画像削除失敗')
                 }
             }
 
@@ -320,7 +325,7 @@ export class ImageService {
             await this.deleteImageFromStorage(currentImage.image_url)
         } catch (deleteError) {
             // Firebase Storageの削除に失敗してもメイン処理は継続する
-            console.warn('Firebase Storage画像削除に失敗しました:', deleteError)
+            this.logger.warn({ deleteError }, 'Firebase Storage 画像削除失敗')
         }
 
         // imagesテーブルから画像情報を削除
@@ -363,6 +368,7 @@ export class ImageService {
         })
 
         if (!image) {
+            this.logger.error('画像未存在エラー発生')
             throw new AppError('指定された画像情報が存在しません', 404)
         }
 
@@ -392,6 +398,7 @@ export class ImageService {
         const match = imageUrl.match(urlPattern)
 
         if (!match || !match[1]) {
+            this.logger.error('画像URL不正エラー発生')
             throw new Error('無効な画像URLです')
         }
 
@@ -404,6 +411,7 @@ export class ImageService {
         if (exists) {
             await file.delete()
         } else {
+            this.logger.warn({ filePath }, 'Firebase Storage 画像未存在失敗')
             console.warn(`削除対象のファイルが存在しません: ${filePath}`)
         }
     }
@@ -419,7 +427,10 @@ export class ImageService {
             select: { user_id: true }
         })
 
-        if (!image) throw new AppError('指定された画像情報が存在しません', 404)
+        if (!image) {
+            this.logger.error('指定画像未存在エラー発生')
+            throw new AppError('指定された画像情報が存在しません', 404)
+        }
         if (image.user_id !== userId) throw new AppError('この画像を削除する権限がありません', 403)
     }
 

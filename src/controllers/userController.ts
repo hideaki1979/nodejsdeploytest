@@ -17,6 +17,7 @@ export class UserController {
     async createUser(req: Request, res: Response) {
         const errors = validationResult(req)
         if (!errors.isEmpty()) {
+            this.logger.error({ errors }, 'バリデーションエラー発生')
             // バリデーションエラーはAppErrorを使用して一貫した形式で返す
             res.status(400).json({
                 success: false,

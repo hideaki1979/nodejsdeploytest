@@ -3,7 +3,9 @@ import { validationResult } from "express-validator";
 import { StoreService } from "../services/storeServices";
 import { FormattedToppingOptionNameStoreData, StoreToppingCallFilter } from "../types/store";
 import { AppError } from "../middlewares/errorMiddleware";
-import { autoInjectable } from "tsyringe";
+import { autoInjectable, inject } from "tsyringe";
+import { pinoLogger } from "../di.token";
+import { Logger } from "pino";
 
 /**
  * 店舗情報に関するリクエストを処理するコントローラー
@@ -15,7 +17,10 @@ export class StoreController {
    * コントローラーの初期化
    * 依存するサービスをコンストラクタインジェクションで注入
    */
-    constructor(private storeService: StoreService) { }
+    constructor(
+        private storeService: StoreService,
+        @inject(pinoLogger) private logger: Logger
+    ) { }
 
     /**
    * 店舗情報を登録する
@@ -28,6 +33,7 @@ export class StoreController {
         const errors = validationResult(req)
         // バリデーションエラーの場合はエラーで返す
         if (!errors.isEmpty()) {
+            this.logger.error({ errors }, "バリデーションエラー発生")
             res.status(400).json({
                 success: false,
                 errors: errors.array()
@@ -55,6 +61,7 @@ export class StoreController {
         const errors = validationResult(req)
 
         if (!errors.isEmpty()) {
+            this.logger.error({ errors }, "バリデーションエラー発生")
             console.error("バリデーションエラー")
             res.status(400).json({
                 success: false,
@@ -135,6 +142,7 @@ export class StoreController {
 
         // パラメータのバリデーション
         if (!id || isNaN(id)) {
+            this.logger.error({ StoreId: id }, '店舗ID不正値エラー')
             throw new AppError('有効な店舗IDを指定してください', 400)
         }
 

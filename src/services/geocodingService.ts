@@ -1,7 +1,8 @@
 import NodeGeocoder from 'node-geocoder';
 import { inject, injectable } from 'tsyringe';
 import { AppError } from '../middlewares/errorMiddleware';
-import { GOOGLE_MAP_API_KEY } from '../di.token';
+import { GOOGLE_MAP_API_KEY, pinoLogger } from '../di.token';
+import { Logger } from 'pino';
 
 /**
  * ジオコーディングサービス
@@ -11,7 +12,10 @@ import { GOOGLE_MAP_API_KEY } from '../di.token';
 export class GeocodingService {
     private geocoder: NodeGeocoder.Geocoder;
     // サービス初期化
-    constructor(@inject(GOOGLE_MAP_API_KEY) apiKey: string) {
+    constructor(
+        @inject(GOOGLE_MAP_API_KEY) apiKey: string,
+        @inject(pinoLogger) private logger: Logger
+    ) {
         // geocoderの設定
         const options: NodeGeocoder.Options = {
             provider: 'google',
@@ -31,7 +35,7 @@ export class GeocodingService {
         const results = await this.geocoder.geocode(address)
 
         if (results.length === 0) {
-            console.error(`住所${address}で位置情報を取得出来ませんでした。`)
+            this.logger.error({ address }, '住所位置情報取得エラー発生')
             throw new AppError("住所から位置情報を取得出来ませんでした。", 404)
         }
 
