@@ -1,6 +1,6 @@
 import { Router } from "express"
 import { ImageController } from "../controllers/imageController"
-import { imageGetValidationRules, imageUpdateValidationRules, imageUploadValidationRules } from "../middlewares/imageValidation"
+import { imageGetValidationRules, imageListGetValidationRules, imageUpdateValidationRules, imageUploadValidationRules } from "../middlewares/imageValidation"
 import { authenticateUser } from "../middlewares/authMiddleware"
 import { handleValidationErrors } from "../middlewares/validationMiddleware"
 import { createHandler } from "../utils/routeHandler"
@@ -90,7 +90,7 @@ imageRouter.post('/', authenticateUser, imageUploadValidationRules, handleValida
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
-imageRouter.get(`/`, imageGetValidationRules, handleValidationErrors, createHandler(ImageController, 'getStoreImages'))
+imageRouter.get(`/`, imageListGetValidationRules, handleValidationErrors, createHandler(ImageController, 'getStoreImages'))
 /**
  * @swagger
  * /stores/{storeId}/images/{imageId}:
