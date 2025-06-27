@@ -89,3 +89,13 @@ export const imageGetValidationRules = [
         .notEmpty().withMessage('画像IDは必須です')
         .isInt().withMessage('画像IDは整数で指定してください')
 ]
+
+/**
+ * 画像リスト取得用のバリデーションルール
+ * リクエストの内容を検証し、適切なエラーメッセージを設定
+ */
+export const imageListGetValidationRules = [
+    param('storeId')
+        .notEmpty().withMessage('店舗IDは必須です')
+        .isInt().withMessage('店舗IDは整数で指定してください')
+]
