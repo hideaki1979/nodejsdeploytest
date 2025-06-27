@@ -16,7 +16,7 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
         const logger = container.resolve<Logger>(pinoLogger)
-        logger.error({ errors: JSON.stringify(errors), path: req.originalUrl }, 'バリデーションエラーが発生しました。')
+        logger.error({ errors: errors.array(), path: req.originalUrl }, 'バリデーションエラーが発生しました。')
         res.status(400).json({
             success: false,
             error: 'バリデーションエラー発生：入力値に誤りがあります。',

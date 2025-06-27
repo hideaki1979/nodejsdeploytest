@@ -179,7 +179,7 @@ export class ImageService {
         })
 
         if (!image) {
-            this.logger.error('画像未存在エラー発生')
+            this.logger.error({ storeId, imageId }, '画像未存在エラー発生')
             throw new AppError('指定された画像情報が存在しません', 404)
         }
 
@@ -366,7 +366,7 @@ export class ImageService {
         })
 
         if (!image) {
-            this.logger.error('画像未存在エラー発生')
+            this.logger.error({ storeId, imageId }, '画像未存在エラー発生')
             throw new AppError('指定された画像情報が存在しません', 404)
         }
 
@@ -425,7 +425,7 @@ export class ImageService {
         })
 
         if (!image) {
-            this.logger.error({ imageId }, '指定画像未存在エラー発生')
+            this.logger.error({ storeId, imageId }, '指定画像未存在エラー発生')
             throw new AppError('指定された画像情報が存在しません', 404)
         }
         if (image.user_id !== userId) throw new AppError('この画像を削除する権限がありません', 403)
