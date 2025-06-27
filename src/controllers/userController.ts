@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/userServices";
-import { validationResult } from "express-validator";
 import { AppError } from "../middlewares/errorMiddleware";
 import { autoInjectable, inject } from "tsyringe";
 import { pinoLogger } from "../di.token";
@@ -15,16 +14,6 @@ export class UserController {
     ) { }
 
     async createUser(req: Request, res: Response) {
-        const errors = validationResult(req)
-        if (!errors.isEmpty()) {
-            // バリデーションエラーはAppErrorを使用して一貫した形式で返す
-            res.status(400).json({
-                success: false,
-                error: 'バリデーションエラー',
-                errors: errors.array()
-            })
-            return
-        }
         const result = await this.userService.createUser(req.body)
         res.status(201).json({
             success: true,

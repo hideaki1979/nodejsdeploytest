@@ -2,6 +2,7 @@ import { Router } from "express";
 import { StoreController } from "../controllers/storeController";
 import { storeValidationRules } from "../middlewares/validation";
 import { createHandler } from "../utils/routeHandler";
+import { handleValidationErrors } from "../middlewares/validationMiddleware";
 
 const storeRouter = Router()
 
@@ -37,7 +38,7 @@ const storeRouter = Router()
  *       '500':
  *         description: サーバーエラー。
  */
-storeRouter.post('/', storeValidationRules, createHandler(StoreController, "createStore"))
+storeRouter.post('/', storeValidationRules, handleValidationErrors, createHandler(StoreController, "createStore"))
 
 /**
  * @swagger
@@ -137,7 +138,7 @@ storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
-storeRouter.put('/:id', storeValidationRules, createHandler(StoreController, 'updateStore'))
+storeRouter.put('/:id', storeValidationRules, handleValidationErrors, createHandler(StoreController, 'updateStore'))
 
 /**
  * @swagger

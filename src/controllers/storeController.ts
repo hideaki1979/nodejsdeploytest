@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
-import { validationResult } from "express-validator";
 import { StoreService } from "../services/storeServices";
 import { FormattedToppingOptionNameStoreData, StoreToppingCallFilter } from "../types/store";
 import { AppError } from "../middlewares/errorMiddleware";
-import { autoInjectable } from "tsyringe";
+import { autoInjectable, inject } from "tsyringe";
+import { pinoLogger } from "../di.token";
+import { Logger } from "pino";
 
 /**
  * 店舗情報に関するリクエストを処理するコントローラー
@@ -15,7 +16,10 @@ export class StoreController {
    * コントローラーの初期化
    * 依存するサービスをコンストラクタインジェクションで注入
    */
-    constructor(private storeService: StoreService) { }
+    constructor(
+        private storeService: StoreService,
+        @inject(pinoLogger) private logger: Logger
+    ) { }
 
     /**
    * 店舗情報を登録する
@@ -24,16 +28,6 @@ export class StoreController {
    * @param res レスポンスオブジェクト
    */
     async createStore(req: Request, res: Response): Promise<void> {
-        // バリデーションエラーの確認
-        const errors = validationResult(req)
-        // バリデーションエラーの場合はエラーで返す
-        if (!errors.isEmpty()) {
-            res.status(400).json({
-                success: false,
-                errors: errors.array()
-            })
-            return
-        }
         // サービスクラスで店舗情報登録を実施
         const result = await this.storeService.createStore(req.body)
 
@@ -51,17 +45,6 @@ export class StoreController {
      * @param res レスポンスオブジェクト
      */
     async updateStore(req: Request, res: Response): Promise<void> {
-        // バリデーションエラーの確認
-        const errors = validationResult(req)
-
-        if (!errors.isEmpty()) {
-            console.error("バリデーションエラー")
-            res.status(400).json({
-                success: false,
-                errors: errors.array()
-            })
-            return
-        }
 
         const storeId = Number(req.params.id)
         const result = await this.storeService.updateStore(storeId, req.body)
@@ -135,6 +118,7 @@ export class StoreController {
 
         // パラメータのバリデーション
         if (!id || isNaN(id)) {
+            this.logger.error({ storeId: id }, '店舗ID不正値エラー')
             throw new AppError('有効な店舗IDを指定してください', 400)
         }
 
