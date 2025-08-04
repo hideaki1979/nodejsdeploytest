@@ -61,9 +61,9 @@ J.Navi API は、二郎系ラーメン愛好家のための専門的な店舗情
 | カテゴリ                 | 技術・ライブラリ                                                                                                                                           | バージョン  | 用途                               |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------- |
 | **言語**                 | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="20" height="20" alt="TypeScript Logo"/> TypeScript | 5.8.2       | 型安全性の確保                     |
-| **ランタイム**           | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="20" height="20" alt="Node.js Logo"/> Node.js               | 22.x        | JavaScript 実行環境                |
+| **ランタイム**           | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="20" height="20" alt="Node.js Logo"/> Node.js               | 18.x以上        | JavaScript 実行環境                |
 | **フレームワーク**       | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg" width="20" height="20" alt="Express Logo"/> Express             | 4.21.2      | Web アプリケーションフレームワーク |
-| **データベース**         | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="20" height="20" alt="PostgreSQL Logo"/> PostgreSQL | 16.x        | リレーショナルデータベース         |
+| **データベース**         | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="20" height="20" alt="PostgreSQL Logo"/> PostgreSQL | 16.x以上        | リレーショナルデータベース         |
 | **ORM**                  | Prisma                                                                                                                                                     | 6.6.0       | データベース操作・マイグレーション |
 | **認証・ストレージ**     | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-plain.svg" width="20" height="20" alt="Firebase Logo"/> Firebase            | 13.2.0      | 認証・ファイルストレージ           |
 | **HTTP クライアント**    | <img src="https://axios-http.com/assets/favicon.ico" width="20" height="20" alt="Axios Logo"/> Axios                                                       | 1.8.1       | API 通信                           |
@@ -139,7 +139,7 @@ sequenceDiagram
     API-->>C: 201 Created
 
     Note over C,DB: 2. 画像アップロードフロー
-    C->>API: POST /stores/:id/images
+    C->>API: POST /stores/:storeId/images
     API->>A: 認証チェック
     A->>F: Firebase Token検証
     F-->>A: 認証結果
@@ -261,7 +261,7 @@ erDiagram
 
 ```bash
 # リポジトリをクローン
-git clone <repository-url>
+git clone https://github.com/hideaki1979/nodejsdeploytest.git
 cd nodedeploytest
 
 # 依存関係のインストール
