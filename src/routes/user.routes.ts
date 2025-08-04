@@ -1,6 +1,5 @@
-import { NextFunction, Request, Response, Router } from "express";
+import { Router } from "express";
 import { UserController } from "../controllers/userController";
-import { container } from "tsyringe";
 import { authenticateUser } from "../middlewares/authMiddleware";
 import { userValidationRules } from "../middlewares/userValidation";
 import { handleValidationErrors } from "../middlewares/validationMiddleware";

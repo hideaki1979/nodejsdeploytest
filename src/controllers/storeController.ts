@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { StoreService } from "../services/storeServices";
+import { StoreService } from "../services/storeService";
 import { FormattedToppingOptionNameStoreData, StoreToppingCallFilter } from "../types/store";
 import { AppError } from "../middlewares/errorMiddleware";
 import { autoInjectable, inject } from "tsyringe";

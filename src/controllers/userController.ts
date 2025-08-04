@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { UserService } from "../services/userServices";
+import { UserService } from "../services/userService";
 import { AppError } from "../middlewares/errorMiddleware";
 import { autoInjectable, inject } from "tsyringe";
 import { pinoLogger } from "../di.token";
