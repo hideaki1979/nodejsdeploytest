@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: jnavi-postgres
+    restart: unless-stopped
+    environment:
+      # 認証情報は .env から注入する（リポジトリにハードコードしない）
+      POSTGRES_USER: ${POSTGRES_USER:-jnavi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required (.env に設定してください)}
+      POSTGRES_DB: ${POSTGRES_DB:-jnavi}
+    ports:
+      # ホスト側はネイティブPostgreSQL(5432)と競合するため5433を使用
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jnavi} -d ${POSTGRES_DB:-jnavi}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
