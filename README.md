@@ -61,11 +61,11 @@ J.Navi API は、二郎系ラーメン愛好家のための専門的な店舗情
 | カテゴリ                 | 技術・ライブラリ                                                                                                                                           | バージョン  | 用途                               |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------- |
 | **言語**                 | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="20" height="20" alt="TypeScript Logo"/> TypeScript | 5.8.2       | 型安全性の確保                     |
-| **ランタイム**           | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="20" height="20" alt="Node.js Logo"/> Node.js               | 18.x 以上   | JavaScript 実行環境                |
+| **ランタイム**           | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="20" height="20" alt="Node.js Logo"/> Node.js               | 22.x 以上   | JavaScript 実行環境                |
 | **フレームワーク**       | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg" width="20" height="20" alt="Express Logo"/> Express             | 4.21.2      | Web アプリケーションフレームワーク |
 | **データベース**         | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="20" height="20" alt="PostgreSQL Logo"/> PostgreSQL | 16.x 以上   | リレーショナルデータベース         |
 | **ORM**                  | Prisma                                                                                                                                                     | 6.6.0       | データベース操作・マイグレーション |
-| **認証・ストレージ**     | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-plain.svg" width="20" height="20" alt="Firebase Logo"/> Firebase            | 13.2.0      | 認証・ファイルストレージ           |
+| **認証・ストレージ**     | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-plain.svg" width="20" height="20" alt="Firebase Logo"/> Firebase            | 14.2.0      | 認証・ファイルストレージ           |
 | **HTTP クライアント**    | <img src="https://axios-http.com/assets/favicon.ico" width="20" height="20" alt="Axios Logo"/> Axios                                                       | 1.8.1       | API 通信                           |
 | **バリデーション**       | express-validator                                                                                                                                          | 7.2.1       | 入力値バリデーション               |
 | **DI コンテナ**          | tsyringe                                                                                                                                                   | 4.10.0      | 依存性注入                         |
@@ -253,7 +253,7 @@ erDiagram
 
 ### 前提条件
 
-- Node.js (v18 以上)
+- Node.js (v22 以上 ※ firebase-admin v14 の要件)
 - PostgreSQL (v16 以上)
 - Firebase プロジェクトの設定
 
