@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import admin from "../config/firebase"
+import { DecodedIdToken } from "firebase-admin/auth"
+import { auth } from "../config/firebase"
 
 // リクエストにユーザー情報を追加するための拡張
 declare module 'express' {
     interface Request {
-        user?: admin.auth.DecodedIdToken;
+        user?: DecodedIdToken;
     }
 }
 
@@ -28,7 +29,7 @@ export const authenticateUser = async (
         const idToken = authHeader.split('Bearer ')[1]
 
         // Firebase Admin SDKでトークンを検証
-        const decodedToken = await admin.auth().verifyIdToken(idToken)
+        const decodedToken = await auth.verifyIdToken(idToken)
 
         // 検証済みユーザー情報をリクエストオブジェクトに追加
         req.user = decodedToken
