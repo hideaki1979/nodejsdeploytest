@@ -10,6 +10,20 @@ import { Logger } from "pino";
 @injectable()
 export class ImageService {
 
+    /**
+     * Firebase Storageへの保存を許可する画像MIMEタイプと、対応する拡張子
+     *
+     * Storageに設定したContent-Typeは公開URL（storage.googleapis.com）で
+     * そのまま配信されるため、text/html等を保存させてはならない。
+     * 拡張子の判定と許可判定を同じ表から導くことで、両者の乖離を防ぐ
+     */
+    private static readonly ALLOWED_IMAGE_MIME_TYPES: Readonly<Record<string, string>> = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp'
+    }
+
     constructor(
         @inject(PRISMA_CLIENT) private prisma: PrismaClient,
         @inject(pinoLogger) private logger: Logger
@@ -26,7 +40,7 @@ export class ImageService {
         // StorageへのアップロードはネットワークI/OのためDBトランザクションの外で行う。
         // トランザクション内で実行すると、アップロードの所要時間だけDB接続とロックを占有し、
         // PRISMA_TRANSACTION_TIMEOUT超過でロールバックする可能性がある
-        const uploadedUrl = await this.uploadImageToStorage(data.image_base64!, data.store_id)
+        const uploadedUrl = await this.uploadImageToStorage(data.image_base64, data.store_id)
 
         try {
             // トランザクションで処理することで、データの整合性を担保
@@ -379,9 +393,16 @@ export class ImageService {
      * @param imageBase64 data URL形式のBase64画像データ
      * @param storeId 保存先の店舗ID
      * @returns アップロードしたファイルの公開URL
-     * @throws AppError 画像データ形式が不正な場合は400
+     * @throws AppError 画像データが未設定、または形式が不正な場合は400
      */
-    private async uploadImageToStorage(imageBase64: string, storeId: string | number): Promise<string> {
+    private async uploadImageToStorage(imageBase64: string | null | undefined, storeId: string | number): Promise<string> {
+        // 未設定チェック。呼び出し側でnon-nullアサーションを使うと、
+        // 万一バリデーションを通過した場合にTypeErrorとなり500を返してしまう
+        if (!imageBase64) {
+            this.logger.error({ storeId }, '画像データ未設定エラー発生')
+            throw new AppError('画像データは必須です', 400)
+        }
+
         // Base64画像データをバッファに変換
         const matches = imageBase64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
         if (!matches || matches.length !== 3) {
@@ -392,8 +413,13 @@ export class ImageService {
         const imageBuffer = Buffer.from(matches[2], 'base64')
         const contentType = matches[1]
 
-        // MIMEタイプから拡張子を取得
-        const fileExtension = this.getFileExtensionFromMimeType(contentType)
+        // MIMEタイプを許可リストで検証し、対応する拡張子を得る。
+        // 正規表現は image/svg+xml や text/html も通してしまうため、ここで弾く
+        const fileExtension = ImageService.ALLOWED_IMAGE_MIME_TYPES[contentType]
+        if (!fileExtension) {
+            this.logger.error({ storeId, contentType }, '非対応画像形式エラー発生')
+            throw new AppError('対応していない画像形式です。JPEG、PNG、GIF、WEBPのみ利用できます', 400)
+        }
 
         // ファイルパスの生成（UUID + タイムスタンプで一意性を確保）
         const timestamp = Date.now()
@@ -493,26 +519,6 @@ export class ImageService {
         if (image.user_id !== userId) {
             this.logger.warn({ storeId, imageId, userId }, '画像操作権限エラー発生')
             throw new AppError('この画像を操作する権限がありません', 403)
-        }
-    }
-
-    /**
-     * MIMEタイプからファイル拡張子を取得する
-     * @param mimeType MIMEタイプ
-     * @returns 対応するファイル拡張子
-     */
-    private getFileExtensionFromMimeType(mineType: string): string {
-        switch (mineType) {
-            case 'image/jpeg':
-                return '.jpg'
-            case 'image/png':
-                return '.png'
-            case 'image/gif':
-                return '.gif'
-            case 'image/webp':
-                return '.webp'
-            default:
-                return '.jpg'
         }
     }
 }
