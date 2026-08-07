@@ -69,7 +69,7 @@ import { Image, ImageStoreToppingCall } from "@prisma/client";
 // StoreImageUploadData インターフェースの追加
 export interface StoreImageUploadData {
     store_id: number | string;
-    user_id: string;
+    // user_idは含めない。投稿者IDは検証済みトークンのUIDをサーバー側で設定する
     menu_type: number;
     menu_name: string;
     image_base64: string | null;

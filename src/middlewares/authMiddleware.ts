@@ -49,10 +49,11 @@ export const authenticateUser = async (
             }
         }
 
+        // 既にレスポンスを返しているためnext(error)は呼ばない
+        // （呼ぶとエラーハンドラが二重にレスポンスを送信し ERR_HTTP_HEADERS_SENT が発生する）
         res.status(401).json({
             status: 'InvalidToken',
             message: `無効な認証トークンです`
         })
-        next(error)
     }
 }

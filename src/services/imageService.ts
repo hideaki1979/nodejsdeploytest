@@ -10,6 +10,20 @@ import { Logger } from "pino";
 @injectable()
 export class ImageService {
 
+    /**
+     * Firebase Storageへの保存を許可する画像MIMEタイプと、対応する拡張子
+     *
+     * Storageに設定したContent-Typeは公開URL（storage.googleapis.com）で
+     * そのまま配信されるため、text/html等を保存させてはならない。
+     * 拡張子の判定と許可判定を同じ表から導くことで、両者の乖離を防ぐ
+     */
+    private static readonly ALLOWED_IMAGE_MIME_TYPES: Readonly<Record<string, string>> = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp'
+    }
+
     constructor(
         @inject(PRISMA_CLIENT) private prisma: PrismaClient,
         @inject(pinoLogger) private logger: Logger
@@ -19,77 +33,53 @@ export class ImageService {
    * 店舗画像とそれに関連するトッピング情報を登録する
    * 画像はBase64形式でエンコードされている必要がある
    * @param data 店舗画像のアップロードデータ
+   * @param userId 投稿者のFirebase UID（検証済みトークン由来）
    * @returns 作成された画像エントリ
    */
-    async createImage(data: StoreImageUploadData) {
-        // トランザクションで処理することで、データの整合性を担保
-        return await this.prisma.$transaction(async (tx) => {
-            // Base64画像データをバッファに変換
-            const matches = data.image_base64!.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
-            if (!matches || matches.length !== 3) {
-                this.logger.error({ matches }, '不正画像データエラー発生')
-                throw new Error('無効な画像データ形式です');
-            }
+    async createImage(data: StoreImageUploadData, userId: string) {
+        // StorageへのアップロードはネットワークI/OのためDBトランザクションの外で行う。
+        // トランザクション内で実行すると、アップロードの所要時間だけDB接続とロックを占有し、
+        // PRISMA_TRANSACTION_TIMEOUT超過でロールバックする可能性がある
+        const uploadedUrl = await this.uploadImageToStorage(data.image_base64, data.store_id)
 
-            const imageBuffer = Buffer.from(matches[2], 'base64')
-            const contentType = matches[1]
+        try {
+            // トランザクションで処理することで、データの整合性を担保
+            return await this.prisma.$transaction(async (tx) => {
+                // データベースに画像情報を保存
+                const image = await tx.image.create({
+                    data: {
+                        store_id: BigInt(data.store_id),
+                        user_id: userId,
+                        menu_type: data.menu_type,
+                        menu_name: data.menu_name,
+                        image_url: uploadedUrl
+                    }
+                })
 
-            // MIMEタイプから拡張子を取得
-            const fileExtension = this.getFileExtensionFromMimeType(contentType)
+                // トッピング選択がある場合は関連付けを作成
+                const imageStoreToppingCalls = []
 
-            // ファイルパスの生成（UUID + タイムスタンプで一意性を確保）
-            const timestamp = Date.now()
-            const fileName = `stores/${data.store_id}/${uuidv4()}_${timestamp}${fileExtension}`
+                if (data.topping_selections && data.topping_selections.length > 0) {
+                    for (const selection of data.topping_selections) {
+                        // 画像トッピングコール情報を保存し、トッピングを関連付ける
+                        const imageToppingCall = await tx.imageStoreToppingCall.create({
+                            data: {
+                                image_id: BigInt(image.id),
+                                topping_id: BigInt(selection.topping_id),
+                                store_topping_call_id: BigInt(selection.store_topping_call_id)
+                            }
+                        })
+                        imageStoreToppingCalls.push(imageToppingCall)
 
-            // FireBase Storageにアップロード
-            const file = bucket.file(fileName)
-
-            // ファイル書き込む
-            await file.save(imageBuffer, {
-                metadata: {
-                    contentType,
-                    metadata: {
-                        storeId: String(data.store_id)
                     }
                 }
+                return { image, imageStoreToppingCalls }
             })
-
-            // ファイルの公開URL取得のためのアクセス設定
-            await file.makePublic();
-
-            // 公開URLの取得
-            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-
-            // データベースに画像情報を保存
-            const image = await tx.image.create({
-                data: {
-                    store_id: BigInt(data.store_id),
-                    user_id: data.user_id,
-                    menu_type: data.menu_type,
-                    menu_name: data.menu_name,
-                    image_url: publicUrl
-                }
-            })
-
-            // トッピング選択がある場合は関連付けを作成
-            const imageStoreToppingCalls = []
-
-            if (data.topping_selections && data.topping_selections.length > 0) {
-                for (const selection of data.topping_selections) {
-                    // 画像トッピングコール情報を保存し、トッピングを関連付ける
-                    const imageToppingCall = await tx.imageStoreToppingCall.create({
-                        data: {
-                            image_id: BigInt(image.id),
-                            topping_id: BigInt(selection.topping_id),
-                            store_topping_call_id: BigInt(selection.store_topping_call_id)
-                        }
-                    })
-                    imageStoreToppingCalls.push(imageToppingCall)
-
-                }
-            }
-            return { image, imageStoreToppingCalls }
-        })
+        } catch (error) {
+            // 補償処理：DB登録に失敗した場合、アップロード済みファイルが孤立するため削除する
+            await this.safeDeleteImageFromStorage(uploadedUrl, '画像登録失敗の補償処理')
+            throw error
+        }
     }
 
     /**
@@ -202,99 +192,111 @@ export class ImageService {
         return editData
     }
 
-    async updateStoreImageService(storeId: string | number, imageId: string | number, data: StoreImageUploadData) {
-        return await this.prisma.$transaction(async (tx) => {
-            // パラメータをBigIntに変換
-            const storeBigInt = BigInt(storeId)
-            const imageBigInt = BigInt(imageId)
+    /**
+     * 店舗画像を更新する
+     *
+     * StorageとDBは同一のトランザクションで保護できないため、
+     * 「認可 → アップロード → DB更新 → 旧ファイル削除」の順に段階を分け、
+     * DB更新が失敗した場合はアップロード済みファイルを削除する補償処理で整合性を保つ。
+     * 旧ファイルの削除は必ずコミット後に行う。コミット前に削除すると、
+     * DB更新が失敗した際にレコードは旧URLを指したままファイルだけが失われる
+     * @param storeId 店舗ID（パスパラメータ）
+     * @param imageId 画像ID（パスパラメータ）
+     * @param data 更新内容
+     * @param userId 操作者のFirebase UID（検証済みトークン由来）
+     * @param isAdmin 操作者が管理者ロールを持つ場合true
+     * @returns 更新された画像情報
+     */
+    async updateStoreImageService(
+        storeId: string | number,
+        imageId: string | number,
+        data: StoreImageUploadData,
+        userId: string,
+        isAdmin: boolean = false
+    ) {
+        // パラメータをBigIntに変換
+        const storeBigInt = BigInt(storeId)
+        const imageBigInt = BigInt(imageId)
 
-            // 現在の画像情報を取得（旧画像URL取得のため）
-            const currentImage = await this.validateImageExists(tx, storeBigInt, imageBigInt)
+        // 【第1段階】認可と存在確認のみを短いトランザクションで実施する。
+        // アップロードより先に行うことで、権限の無い利用者にStorageへ書き込ませない
+        await this.prisma.$transaction(async (tx) => {
+            // 画像所有者チェック（投稿者本人、または管理者のみ更新可）
+            await this.validateImageOwnership(tx, storeBigInt, imageBigInt, userId, isAdmin)
+            await this.validateImageExists(tx, storeBigInt, imageBigInt)
+        })
 
-            let newImageUrl = currentImage.image_url    // デフォルトは現在のURL
+        // 【第2段階】新しい画像をトランザクション外でアップロードする。
+        // 保存先はボディのstore_idではなく、認可判定に使ったパスパラメータのstoreIdを使用する
+        const uploadedUrl = data.image_base64
+            ? await this.uploadImageToStorage(data.image_base64, storeId)
+            : null
 
-            // image_base64が提供された場合のFirebase Storage処理
-            if (data.image_base64) {
-                // Base64画像データをバッファに変換
-                const matches = data.image_base64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
-                if (!matches || matches.length !== 3) {
-                    this.logger.error({ matches }, '不正画像データエラー発生')
-                    throw new AppError('無効な画像データ形式です', 400)
-                }
+        // 【第3段階】DBを更新する
+        let txResult
+        try {
+            txResult = await this.prisma.$transaction(async (tx) => {
+                // 第1段階からの経過中に所有者や存在状態が変化している可能性があるため再検証する
+                await this.validateImageOwnership(tx, storeBigInt, imageBigInt, userId, isAdmin)
 
-                const imageBuffer = Buffer.from(matches[2], 'base64')
-                const contentType = matches[1]
+                // 置き換え直前の状態をトランザクション内で読み直す。
+                // 第1段階で取得した値を使うと、並行更新があった場合に古いURLで上書きしてしまう
+                const before = await this.validateImageExists(tx, storeBigInt, imageBigInt)
 
-                // MIMEタイプから拡張子を取得
-                const fileExtension = this.getFileExtensionFromMimeType(contentType)
-
-                // 新しいファイルパスの生成（UUID + タイムスタンプで一意性を確保）
-                const timestamp = Date.now()
-                const fileName = `stores/${data.store_id}/${uuidv4()}_${timestamp}${fileExtension}`
-
-                // FireBase Storageに新しい画像をアップロード
-                const file = bucket.file(fileName)
-
-                // ファイルを書き込む
-                await file.save(imageBuffer, {
-                    metadata: {
-                        contentType,
-                        metadata: {
-                            storeId: String(storeId)
-                        }
+                // imagesテーブルの更新
+                const updatedImage = await tx.image.update({
+                    where: {
+                        id: imageBigInt
+                    },
+                    data: {
+                        menu_type: data.menu_type,
+                        menu_name: data.menu_name,
+                        image_url: uploadedUrl ?? before.image_url
                     }
                 })
-                // ファイルの公開URL取得のためのアクセス設定
-                await file.makePublic()
 
-                // 新しい公開URLの取得
-                newImageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`
+                // 既存のimage_store_topping_callsを削除
+                await this.deleteImageToppingCalls(tx, imageBigInt)
 
-                // 旧画像をFirebase Storageから削除（共通処理）
-                try {
-                    await this.deleteImageFromStorage(currentImage.image_url)
-                } catch (deleteError) {
-                    // 旧画像の削除に失敗してもメイン処理は継続する
-                    this.logger.warn({ deleteError }, 'Firebase Storage 画像削除失敗')
+                // 新しいトッピング選択を挿入
+                const imageStoreToppingCalls = []
+                if (data.topping_selections && data.topping_selections.length > 0) {
+                    for (const selection of data.topping_selections) {
+                        const imageToppingCall = await tx.imageStoreToppingCall.create({
+                            data: {
+                                image_id: imageBigInt,
+                                topping_id: BigInt(selection.topping_id),
+                                store_topping_call_id: BigInt(selection.store_topping_call_id)
+                            }
+                        })
+                        imageStoreToppingCalls.push(imageToppingCall)
+                    }
                 }
-            }
 
-            // imagesテーブルの更新
-            const updatedImage = await tx.image.update({
-                where: {
-                    id: imageBigInt
-                },
-                data: {
-                    menu_type: data.menu_type,
-                    menu_name: data.menu_name,
-                    image_url: newImageUrl
+                return {
+                    image: updatedImage,
+                    imageStoreToppingCalls,
+                    imageUpdated: uploadedUrl !== null,
+                    // コミット後に削除する対象。実際に置き換えたURLだけを消す
+                    replacedUrl: before.image_url
                 }
             })
-
-            // 既存のimage_store_topping_callsを削除
-            await this.deleteImageToppingCalls(tx, imageBigInt)
-
-            // 新しいトッピング選択を挿入
-            const imageStoreToppingCalls = []
-            if (data.topping_selections && data.topping_selections.length > 0) {
-                for (const selection of data.topping_selections) {
-                    const imageToppingCall = await tx.imageStoreToppingCall.create({
-                        data: {
-                            image_id: imageBigInt,
-                            topping_id: BigInt(selection.topping_id),
-                            store_topping_call_id: BigInt(selection.store_topping_call_id)
-                        }
-                    })
-                    imageStoreToppingCalls.push(imageToppingCall)
-                }
+        } catch (error) {
+            // 補償処理：DB更新に失敗した場合、アップロード済みファイルが孤立するため削除する
+            if (uploadedUrl) {
+                await this.safeDeleteImageFromStorage(uploadedUrl, '画像更新失敗の補償処理')
             }
+            throw error
+        }
 
-            return {
-                image: updatedImage,
-                imageStoreToppingCalls,
-                imageUpdated: data.image_base64 ? true : false
-            }
-        })
+        // 【第4段階】コミット後に旧ファイルを削除する。
+        // ここでの失敗は孤立ファイルが残るだけでDBとの不整合は起きない
+        const { replacedUrl, ...result } = txResult
+        if (uploadedUrl && replacedUrl !== uploadedUrl) {
+            await this.safeDeleteImageFromStorage(replacedUrl, '更新による旧画像削除')
+        }
+
+        return result
     }
 
     /**
@@ -305,38 +307,37 @@ export class ImageService {
      * @returns 削除された画像情報
      */
 
-    async deleteStoreImageService(storeId: string | number, imageId: string | number, userId: string) {
+    async deleteStoreImageService(
+        storeId: string | number,
+        imageId: string | number,
+        userId: string,
+        isAdmin: boolean = false
+    ) {
         // パラメータをBigIntに変換
         const storeBigInt = BigInt(storeId)
         const imageBigInt = BigInt(imageId)
 
-        // 画像存在確認（共通処理）
-        const currentImage = await this.prisma.$transaction(async (tx) => {
-            // 画像所有者チェック
-            await this.validateImageOwnership(tx, storeBigInt, imageBigInt, userId)
-            // 画像存在確認（共通処理）
-            return await this.validateImageExists(tx, storeBigInt, imageBigInt)
-        })
-
-        // Firebase Storageから画像ファイルを削除（共通処理）
-        try {
-            await this.deleteImageFromStorage(currentImage.image_url)
-        } catch (deleteError) {
-            // Firebase Storageの削除に失敗してもメイン処理は継続する
-            this.logger.warn({ deleteError }, 'Firebase Storage 画像削除失敗')
-        }
-
-        // imagesテーブルから画像情報を削除
+        // 認可・関連レコード削除・画像レコード削除を1つのトランザクションで完結させる。
+        // 分割すると、DB削除が失敗したときにファイルだけが失われてリンク切れになる
         const deleteImage = await this.prisma.$transaction(async (tx) => {
+            // 画像所有者チェック（投稿者本人、または管理者のみ削除可）
+            // 存在確認も兼ねており、対象が無ければ404を送出する
+            await this.validateImageOwnership(tx, storeBigInt, imageBigInt, userId, isAdmin)
+
             // 関連するimage_store_topping_callsを削除（共通処理）
             await this.deleteImageToppingCalls(tx, imageBigInt)
 
+            // 削除結果から image_url を受け取り、コミット後のStorage削除に使う
             return await tx.image.delete({
                 where: {
                     id: imageBigInt
                 }
             })
         })
+
+        // コミット後にFirebase Storageの実ファイルを削除する。
+        // ここでの失敗は孤立ファイルが残るだけでDBとの不整合は起きない
+        await this.safeDeleteImageFromStorage(deleteImage.image_url, '画像削除')
 
         return {
             image: deleteImage,
@@ -387,6 +388,78 @@ export class ImageService {
     }
 
     /**
+     * Base64画像をFirebase Storageへアップロードし、公開URLを返す（共通処理）
+     * ネットワークI/Oを含むため、DBトランザクションの外から呼び出すこと
+     * @param imageBase64 data URL形式のBase64画像データ
+     * @param storeId 保存先の店舗ID
+     * @returns アップロードしたファイルの公開URL
+     * @throws AppError 画像データが未設定、または形式が不正な場合は400
+     */
+    private async uploadImageToStorage(imageBase64: string | null | undefined, storeId: string | number): Promise<string> {
+        // 未設定チェック。呼び出し側でnon-nullアサーションを使うと、
+        // 万一バリデーションを通過した場合にTypeErrorとなり500を返してしまう
+        if (!imageBase64) {
+            this.logger.error({ storeId }, '画像データ未設定エラー発生')
+            throw new AppError('画像データは必須です', 400)
+        }
+
+        // Base64画像データをバッファに変換
+        const matches = imageBase64.match(/^data:([A-Za-z-+/]+);base64,(.+)$/)
+        if (!matches || matches.length !== 3) {
+            this.logger.error({ storeId }, '不正画像データエラー発生')
+            throw new AppError('無効な画像データ形式です', 400)
+        }
+
+        const imageBuffer = Buffer.from(matches[2], 'base64')
+        const contentType = matches[1]
+
+        // MIMEタイプを許可リストで検証し、対応する拡張子を得る。
+        // 正規表現は image/svg+xml や text/html も通してしまうため、ここで弾く
+        const fileExtension = ImageService.ALLOWED_IMAGE_MIME_TYPES[contentType]
+        if (!fileExtension) {
+            this.logger.error({ storeId, contentType }, '非対応画像形式エラー発生')
+            throw new AppError('対応していない画像形式です。JPEG、PNG、GIF、WEBPのみ利用できます', 400)
+        }
+
+        // ファイルパスの生成（UUID + タイムスタンプで一意性を確保）
+        const timestamp = Date.now()
+        const fileName = `stores/${storeId}/${uuidv4()}_${timestamp}${fileExtension}`
+
+        // FireBase Storageにアップロード
+        const file = bucket.file(fileName)
+
+        // ファイルを書き込む
+        await file.save(imageBuffer, {
+            metadata: {
+                contentType,
+                metadata: {
+                    storeId: String(storeId)
+                }
+            }
+        })
+
+        // ファイルの公開URL取得のためのアクセス設定
+        await file.makePublic()
+
+        // 公開URLの取得
+        return `https://storage.googleapis.com/${bucket.name}/${fileName}`
+    }
+
+    /**
+     * Firebase Storageの画像を削除し、失敗しても例外を送出しない（共通処理）
+     * 削除失敗は孤立ファイルが残るだけでDBとの整合性は壊れないため、警告ログに留める
+     * @param imageUrl 削除対象の画像URL
+     * @param context 呼び出し文脈（ログ調査用）
+     */
+    private async safeDeleteImageFromStorage(imageUrl: string, context: string): Promise<void> {
+        try {
+            await this.deleteImageFromStorage(imageUrl)
+        } catch (deleteError) {
+            this.logger.warn({ deleteError, imageUrl, context }, 'Firebase Storage 画像削除失敗')
+        }
+    }
+
+    /**
      * Firebase StorageからURLを基に画像ファイルを削除する
      * @param imageUrl 削除対象の画像URL
      */
@@ -413,11 +486,22 @@ export class ImageService {
         }
     }
 
+    /**
+     * 画像の操作権限を検証する（共通処理）
+     * 投稿者本人、または管理者ロール保持者のみ操作を許可する
+     * @param tx Prismaトランザクション
+     * @param storeId 店舗ID（BigInt）
+     * @param imageId 画像ID（BigInt）
+     * @param userId 操作者のFirebase UID（検証済みトークン由来）
+     * @param isAdmin 操作者が管理者ロールを持つ場合true
+     * @throws AppError 画像が存在しない場合は404、権限が無い場合は403
+     */
     private async validateImageOwnership(
         tx: Prisma.TransactionClient,
         storeId: bigint,
         imageId: bigint,
-        userId: string
+        userId: string,
+        isAdmin: boolean = false
     ): Promise<void> {
         const image = await tx.image.findFirst({
             where: { id: imageId, store_id: storeId },
@@ -428,26 +512,13 @@ export class ImageService {
             this.logger.error({ storeId, imageId }, '指定画像未存在エラー発生')
             throw new AppError('指定された画像情報が存在しません', 404)
         }
-        if (image.user_id !== userId) throw new AppError('この画像を削除する権限がありません', 403)
-    }
 
-    /**
-     * MIMEタイプからファイル拡張子を取得する
-     * @param mimeType MIMEタイプ
-     * @returns 対応するファイル拡張子
-     */
-    private getFileExtensionFromMimeType(mineType: string): string {
-        switch (mineType) {
-            case 'image/jpeg':
-                return '.jpg'
-            case 'image/png':
-                return '.png'
-            case 'image/gif':
-                return '.gif'
-            case 'image/webp':
-                return '.webp'
-            default:
-                return '.jpg'
+        // 管理者はモデレーション目的で他ユーザーの画像も操作できる
+        if (isAdmin) return
+
+        if (image.user_id !== userId) {
+            this.logger.warn({ storeId, imageId, userId }, '画像操作権限エラー発生')
+            throw new AppError('この画像を操作する権限がありません', 403)
         }
     }
 }

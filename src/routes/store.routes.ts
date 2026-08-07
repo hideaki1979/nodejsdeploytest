@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { StoreController } from "../controllers/storeController";
-import { storeValidationRules } from "../middlewares/validation";
+import { storeCloseValidationRules, storeValidationRules } from "../middlewares/validation";
 import { createHandler } from "../utils/routeHandler";
 import { handleValidationErrors } from "../middlewares/validationMiddleware";
+import { authenticateUser } from "../middlewares/authMiddleware";
 
 const storeRouter = Router()
 
@@ -13,7 +14,9 @@ const storeRouter = Router()
  *     tags:
  *       - Stores
  *     summary: 新規店舗登録
- *     description: 新しい店舗情報を登録します。住所から緯度経度を自動計算して保存します。
+ *     description: 新しい店舗情報を登録します。住所から緯度経度を自動計算して保存します。認証が必要です。
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -35,10 +38,12 @@ const storeRouter = Router()
  *                   $ref: '#/components/schemas/Store'
  *       '400':
  *         description: リクエストが無効です。
+ *       '401':
+ *         description: 認証トークンが無効、または設定されていません。
  *       '500':
  *         description: サーバーエラー。
  */
-storeRouter.post('/', storeValidationRules, handleValidationErrors, createHandler(StoreController, "createStore"))
+storeRouter.post('/', authenticateUser, storeValidationRules, handleValidationErrors, createHandler(StoreController, "createStore"))
 
 /**
  * @swagger
@@ -106,7 +111,9 @@ storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
  *     tags:
  *       - Stores
  *     summary: 店舗情報更新
- *     description: 指定されたIDの店舗情報を更新します。
+ *     description: 指定されたIDの店舗情報を更新します。認証が必要です。
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -135,10 +142,12 @@ storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
  *                   $ref: '#/components/schemas/Store'
  *       '400':
  *         description: リクエストが無効です。
+ *       '401':
+ *         description: 認証トークンが無効、または設定されていません。
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
-storeRouter.put('/:id', storeValidationRules, handleValidationErrors, createHandler(StoreController, 'updateStore'))
+storeRouter.put('/:id', authenticateUser, storeValidationRules, handleValidationErrors, createHandler(StoreController, 'updateStore'))
 
 /**
  * @swagger
@@ -147,7 +156,9 @@ storeRouter.put('/:id', storeValidationRules, handleValidationErrors, createHand
  *     tags:
  *       - Stores
  *     summary: 店舗を閉店済みにする
- *     description: 指定された店舗の営業状態を「閉店」に変更します。
+ *     description: 指定された店舗の営業状態を「閉店」に変更します。認証が必要です。
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -155,6 +166,19 @@ storeRouter.put('/:id', storeValidationRules, handleValidationErrors, createHand
  *         schema:
  *           type: integer
  *         description: 店舗ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - storeName
+ *             properties:
+ *               storeName:
+ *                 type: string
+ *                 maxLength: 255
+ *                 description: 閉店表示に使用する店舗名
  *     responses:
  *       '200':
  *         description: 正常に店舗を閉店済みにしました。
@@ -166,10 +190,14 @@ storeRouter.put('/:id', storeValidationRules, handleValidationErrors, createHand
  *                 success:
  *                   type: boolean
  *                   example: true
+ *       '400':
+ *         description: リクエストが無効です。
+ *       '401':
+ *         description: 認証トークンが無効、または設定されていません。
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
-storeRouter.patch('/:id/close', createHandler(StoreController, 'storeClose'))
+storeRouter.patch('/:id/close', authenticateUser, storeCloseValidationRules, handleValidationErrors, createHandler(StoreController, 'storeClose'))
 
 /**
  * @swagger
