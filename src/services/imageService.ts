@@ -19,9 +19,10 @@ export class ImageService {
    * 店舗画像とそれに関連するトッピング情報を登録する
    * 画像はBase64形式でエンコードされている必要がある
    * @param data 店舗画像のアップロードデータ
+   * @param userId 投稿者のFirebase UID（検証済みトークン由来）
    * @returns 作成された画像エントリ
    */
-    async createImage(data: StoreImageUploadData) {
+    async createImage(data: StoreImageUploadData, userId: string) {
         // トランザクションで処理することで、データの整合性を担保
         return await this.prisma.$transaction(async (tx) => {
             // Base64画像データをバッファに変換
@@ -64,7 +65,7 @@ export class ImageService {
             const image = await tx.image.create({
                 data: {
                     store_id: BigInt(data.store_id),
-                    user_id: data.user_id,
+                    user_id: userId,
                     menu_type: data.menu_type,
                     menu_name: data.menu_name,
                     image_url: publicUrl
@@ -202,11 +203,20 @@ export class ImageService {
         return editData
     }
 
-    async updateStoreImageService(storeId: string | number, imageId: string | number, data: StoreImageUploadData) {
+    async updateStoreImageService(
+        storeId: string | number,
+        imageId: string | number,
+        data: StoreImageUploadData,
+        userId: string,
+        isAdmin: boolean = false
+    ) {
         return await this.prisma.$transaction(async (tx) => {
             // パラメータをBigIntに変換
             const storeBigInt = BigInt(storeId)
             const imageBigInt = BigInt(imageId)
+
+            // 画像所有者チェック（投稿者本人、または管理者のみ更新可）
+            await this.validateImageOwnership(tx, storeBigInt, imageBigInt, userId, isAdmin)
 
             // 現在の画像情報を取得（旧画像URL取得のため）
             const currentImage = await this.validateImageExists(tx, storeBigInt, imageBigInt)
@@ -229,8 +239,9 @@ export class ImageService {
                 const fileExtension = this.getFileExtensionFromMimeType(contentType)
 
                 // 新しいファイルパスの生成（UUID + タイムスタンプで一意性を確保）
+                // 保存先はボディのstore_idではなく、認可判定に使ったパスパラメータのstoreIdを使用する
                 const timestamp = Date.now()
-                const fileName = `stores/${data.store_id}/${uuidv4()}_${timestamp}${fileExtension}`
+                const fileName = `stores/${storeId}/${uuidv4()}_${timestamp}${fileExtension}`
 
                 // FireBase Storageに新しい画像をアップロード
                 const file = bucket.file(fileName)
@@ -305,15 +316,20 @@ export class ImageService {
      * @returns 削除された画像情報
      */
 
-    async deleteStoreImageService(storeId: string | number, imageId: string | number, userId: string) {
+    async deleteStoreImageService(
+        storeId: string | number,
+        imageId: string | number,
+        userId: string,
+        isAdmin: boolean = false
+    ) {
         // パラメータをBigIntに変換
         const storeBigInt = BigInt(storeId)
         const imageBigInt = BigInt(imageId)
 
         // 画像存在確認（共通処理）
         const currentImage = await this.prisma.$transaction(async (tx) => {
-            // 画像所有者チェック
-            await this.validateImageOwnership(tx, storeBigInt, imageBigInt, userId)
+            // 画像所有者チェック（投稿者本人、または管理者のみ削除可）
+            await this.validateImageOwnership(tx, storeBigInt, imageBigInt, userId, isAdmin)
             // 画像存在確認（共通処理）
             return await this.validateImageExists(tx, storeBigInt, imageBigInt)
         })
@@ -413,11 +429,22 @@ export class ImageService {
         }
     }
 
+    /**
+     * 画像の操作権限を検証する（共通処理）
+     * 投稿者本人、または管理者ロール保持者のみ操作を許可する
+     * @param tx Prismaトランザクション
+     * @param storeId 店舗ID（BigInt）
+     * @param imageId 画像ID（BigInt）
+     * @param userId 操作者のFirebase UID（検証済みトークン由来）
+     * @param isAdmin 操作者が管理者ロールを持つ場合true
+     * @throws AppError 画像が存在しない場合は404、権限が無い場合は403
+     */
     private async validateImageOwnership(
         tx: Prisma.TransactionClient,
         storeId: bigint,
         imageId: bigint,
-        userId: string
+        userId: string,
+        isAdmin: boolean = false
     ): Promise<void> {
         const image = await tx.image.findFirst({
             where: { id: imageId, store_id: storeId },
@@ -428,7 +455,14 @@ export class ImageService {
             this.logger.error({ storeId, imageId }, '指定画像未存在エラー発生')
             throw new AppError('指定された画像情報が存在しません', 404)
         }
-        if (image.user_id !== userId) throw new AppError('この画像を削除する権限がありません', 403)
+
+        // 管理者はモデレーション目的で他ユーザーの画像も操作できる
+        if (isAdmin) return
+
+        if (image.user_id !== userId) {
+            this.logger.warn({ storeId, imageId, userId }, '画像操作権限エラー発生')
+            throw new AppError('この画像を操作する権限がありません', 403)
+        }
     }
 
     /**

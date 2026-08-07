@@ -1,4 +1,4 @@
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 
 /**
  * 店舗情報のバリデーションルール
@@ -50,4 +50,20 @@ export const storeValidationRules = [
     body('topping_calls.*.noodle_type_id')
         .if(body('topping_calls').exists())
         .isInt().withMessage('麺タイプIDは整数で指定してください')
+]
+
+/**
+ * 店舗閉店処理のバリデーションルール
+ * store_nameはテンプレートリテラルで店舗名に直接埋め込まれるため、
+ * 型・長さのチェックを必須とする
+ */
+export const storeCloseValidationRules = [
+    param('id')
+        .notEmpty().withMessage('店舗IDは必須です')
+        .isInt().withMessage('店舗IDは整数で指定してください'),
+
+    body('storeName')
+        .notEmpty().withMessage('店舗名は必須です')
+        .isString().withMessage('店舗名は文字列で指定してください')
+        .isLength({ max: 255 }).withMessage('店舗名は255文字以内で入力してください')
 ]

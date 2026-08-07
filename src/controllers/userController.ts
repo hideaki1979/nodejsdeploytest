@@ -4,6 +4,7 @@ import { AppError } from "../middlewares/errorMiddleware";
 import { autoInjectable, inject } from "tsyringe";
 import { pinoLogger } from "../di.token";
 import { Logger } from "pino";
+import { getAuthenticatedUserid, isAdminUser } from "../utils/auth";
 
 @autoInjectable()
 export class UserController {
@@ -14,7 +15,11 @@ export class UserController {
     ) { }
 
     async createUser(req: Request, res: Response) {
-        const result = await this.userService.createUser(req.body)
+        // 登録するUIDはリクエストボディではなく検証済みトークンから取得する
+        // （他ユーザーのUID・メールアドレスでのレコード作成を防ぐ）
+        const uid = getAuthenticatedUserid(req)
+
+        const result = await this.userService.createUser({ ...req.body, uid })
         res.status(201).json({
             success: true,
             message: 'ユーザー情報が正常に登録されました',
@@ -31,6 +36,14 @@ export class UserController {
                 endpoint: req.originalUrl
             }, '認証トークンIDが設定されてません')
             throw new AppError('認証トークンIDが設定されてません', 401)
+        }
+
+        // 本人確認：自分以外のユーザー情報は管理者のみ参照できる
+        // （メールアドレス等のPIIが第三者に漏れるのを防ぐ）
+        const requesterUid = getAuthenticatedUserid(req)
+        if (requesterUid !== uid && !isAdminUser(req)) {
+            this.logger?.warn({ requesterUid, uid }, 'ユーザー情報参照権限エラー発生')
+            throw new AppError('このユーザー情報を参照する権限がありません', 403)
         }
 
         const result = await this.userService.getIdToken(uid)

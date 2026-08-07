@@ -9,11 +9,8 @@ const commonImageValidationRules = [
         .notEmpty().withMessage('店舗IDは必須です')
         .isInt().withMessage('店舗IDは整数で指定してください'),
 
-    body('user_id')
-        .notEmpty().withMessage('ユーザーIDは必須です')
-        .isString().withMessage('ユーザーIDは文字列で指定してください')
-        .isLength({ min: 28, max: 28 }).withMessage('ユーザーIDは28文字である必要があります')
-        .matches(/^[a-zA-Z0-9]+$/).withMessage('ユーザーIDは英数字のみが許可されています'),
+    // user_idはリクエストボディからは受け取らない（なりすまし防止）
+    // 投稿者IDは検証済みトークンのUIDをサーバー側で設定する
 
     body('menu_type')
         .notEmpty().withMessage('メニュータイプは必須です')

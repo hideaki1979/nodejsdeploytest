@@ -50,6 +50,7 @@ userRouter.post(`/`, authenticateUser, userValidationRules, handleValidationErro
  * /users/{uid}:
  *   get:
  *     summary: ユーザー情報の取得
+ *     description: 指定されたUIDのユーザー情報を取得します。本人、または管理者ロールを持つユーザーのみ参照できます。
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -69,6 +70,8 @@ userRouter.post(`/`, authenticateUser, userValidationRules, handleValidationErro
  *               $ref: '#/components/schemas/User'
  *       '401':
  *         description: 認証エラー
+ *       '403':
+ *         description: 他ユーザーの情報を参照する権限がありません
  *       '404':
  *         description: ユーザーが見つかりません
  *       '500':

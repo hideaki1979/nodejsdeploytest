@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { ImageService } from "../services/imageService";
 import { StoreImageUploadData } from "../types/image";
-import { getAuthenticatedUserid } from "../utils/auth";
+import { getAuthenticatedUserid, isAdminUser } from "../utils/auth";
 import { autoInjectable } from "tsyringe";
 
 @autoInjectable()
@@ -22,10 +22,13 @@ export class ImageController {
      */
     async uploadStoreImage(req: Request, res: Response): Promise<void> {
 
+        // 投稿者IDはリクエストボディではなく検証済みトークンから取得する（なりすまし防止）
+        const userId = getAuthenticatedUserid(req)
+
         const imageData: StoreImageUploadData = req.body
 
         // サービスを呼び出して画像アップロードを実行
-        const result = await this.imageService.createImage(imageData)
+        const result = await this.imageService.createImage(imageData, userId)
 
         // 正常終了レスポンスをリターン
         res.status(201).json({
@@ -69,6 +72,10 @@ export class ImageController {
 
     async updateStoreImage(req: Request, res: Response) {
 
+        // 操作者の認証情報を取得（投稿者本人か管理者かの判定に使用する）
+        const userId = getAuthenticatedUserid(req)
+        const isAdmin = isAdminUser(req)
+
         // パラメータから店舗IDと画像IDを取得
         const storeId = req.params.storeId
         const imageId = req.params.imageId
@@ -77,7 +84,7 @@ export class ImageController {
         const updateData: StoreImageUploadData = req.body
 
         // サービスクラスから画像IDを条件に画像情報・画像トッピング情報を取得する。
-        const result = await this.imageService.updateStoreImageService(storeId, imageId, updateData)
+        const result = await this.imageService.updateStoreImageService(storeId, imageId, updateData, userId, isAdmin)
 
         res.status(200).json({
             success: true,
@@ -92,14 +99,16 @@ export class ImageController {
 
     async deleteStoreImage(req: Request, res: Response) {
 
+        // 操作者の認証情報を取得（投稿者本人か管理者かの判定に使用する）
         const userId = getAuthenticatedUserid(req)
+        const isAdmin = isAdminUser(req)
 
         // パラメータから店舗IDと画像IDを取得
         const storeId = req.params.storeId
         const imageId = req.params.imageId
 
         // サービスクラスから画像削除処理を実行する
-        const result = await this.imageService.deleteStoreImageService(storeId, imageId, userId)
+        const result = await this.imageService.deleteStoreImageService(storeId, imageId, userId, isAdmin)
 
         res.status(200).json({
             success: true,

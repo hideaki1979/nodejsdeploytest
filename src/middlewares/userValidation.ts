@@ -1,11 +1,9 @@
 import { body } from "express-validator";
 
 export const userValidationRules = [
-    body('uid')
-        .notEmpty().withMessage('Firebase UIDは必須です')
-        .isLength({ min: 28, max: 28 }).withMessage('Firebase UIDは28文字である必要があります')
-        .matches(/^[a-zA-Z0-9]+$/).withMessage('Firebase UIDは英数字のみが許可されています')
-        .trim(), // サニタイズ: 前後の空白削除
+    // uidはリクエストボディからは受け取らない（他ユーザーのUIDでの登録を防ぐ）
+    // 登録対象のUIDは検証済みトークンのUIDをサーバー側で設定する
+
     body('displayName')
         .optional()
         .isLength({ max: 50 }).withMessage('表示名は50文字以内で入力してください')
