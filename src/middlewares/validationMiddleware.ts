@@ -16,11 +16,17 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
         const logger = container.resolve<Logger>(pinoLogger)
+        // ログは原因調査のため全件残す（onlyFirstError を付けない）
         logger.error({ errors: errors.array(), path: req.originalUrl }, 'バリデーションエラーが発生しました。')
         res.status(400).json({
             success: false,
             error: 'バリデーションエラー発生：入力値に誤りがあります。',
-            details: errors.array()
+            // レスポンスはフィールドごとに先頭1件へ絞る。
+            // 必須テキスト項目は notEmpty → isString → trim → notEmpty の順で検証しており
+            // （検証順序の意図は validation.ts 冒頭コメントを参照）、bail() を挟んでいないため
+            // 1フィールドに同一メッセージが複数返る（例: "" に対し「必須です」が2件）。
+            // 合否は変わらず details の件数だけが減るため、既存クライアントへの影響はない。
+            details: errors.array({ onlyFirstError: true })
         })
         return
     }
