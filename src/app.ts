@@ -90,7 +90,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 app.use(router)
 
 // 404エラーハンドリング
-app.use((req, res, next) => {
+app.use((_req, _res, next) => {
   next(new AppError("Not Found", 404))
 })
 
