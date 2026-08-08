@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { StoreController } from "../controllers/storeController";
-import { storeCloseValidationRules, storeValidationRules } from "../middlewares/validation";
+import { storeCloseValidationRules, storeIdParamValidationRules, storeValidationRules } from "../middlewares/validation";
 import { createHandler } from "../utils/routeHandler";
 import { handleValidationErrors } from "../middlewares/validationMiddleware";
 import { authenticateUser } from "../middlewares/authMiddleware";
@@ -76,7 +76,7 @@ storeRouter.post('/', authenticateUser, storeValidationRules, handleValidationEr
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
-storeRouter.get('/:id', createHandler(StoreController, 'getStoreById'))
+storeRouter.get('/:id', storeIdParamValidationRules, handleValidationErrors, createHandler(StoreController, 'getStoreById'))
 
 /**
  * @swagger

@@ -96,6 +96,18 @@ export const storeValidationRules = [
 ]
 
 /**
+ * 店舗ID（パスパラメータ）のバリデーションルール
+ * 検証が無いと Number('abc') → NaN のまま Prisma に渡り、
+ * 「ユーザーの入力ミス」が 500（予期せぬエラー）として返ってしまうため、
+ * ルート層で 400 に倒す
+ */
+export const storeIdParamValidationRules = [
+    param('id')
+        .notEmpty().withMessage('店舗IDは必須です')
+        .isInt().withMessage('店舗IDは整数で指定してください')
+]
+
+/**
  * 店舗閉店処理のバリデーションルール
  * store_nameはテンプレートリテラルで店舗名に直接埋め込まれるため、
  * 型・長さのチェックを必須とする
