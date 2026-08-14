@@ -1,0 +1,35 @@
+# アプリをコンテナ化する際、COPY でイメージレイヤーに秘密情報や不要物が焼き込まれるのを防ぐ。
+# レイヤーは後から削除しても履歴に残るため、Dockerfile を書く前にこのファイルを置いておく。
+
+# 秘密情報（最重要）
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*firebase-adminsdk*.json
+
+# 依存・ビルド成果物（イメージ内で再生成する）
+node_modules/
+dist/
+
+# バージョン管理・CI
+.git/
+.gitignore
+.github/
+
+# ログ・カバレッジ・一時ファイル
+logs/
+*.log
+coverage/
+
+# エディタ・OS
+.vscode/
+.cursor/
+.gemini/
+.DS_Store
+
+# ドキュメント（実行に不要）
+README.md
+*.md

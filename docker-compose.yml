@@ -1,23 +1,61 @@
 services:
   db:
-    image: postgres:16-alpine
+    # ダイジェスト固定: タグの指す先が差し替わっても同一イメージであることを保証する。
+    # 更新時は `docker compose pull` ではなくダイジェストの張り替えが必要（Renovate等での自動化を推奨）。
+    image: postgres:16-alpine@sha256:44c4ee9810eff91f7eab4d822642e01115b1a9eccce4bcbdde7604752d68eac6
     container_name: jnavi-postgres
     restart: unless-stopped
     environment:
-      # 認証情報は .env から注入する（リポジトリにハードコードしない）
+      # 認証情報は .env / secrets から注入する（リポジトリにハードコードしない）
       POSTGRES_USER: ${POSTGRES_USER:-jnavi}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required (.env に設定してください)}
       POSTGRES_DB: ${POSTGRES_DB:-jnavi}
+      # パスワードは環境変数ではなくファイル経由で渡す。
+      # 環境変数だと `docker inspect` や /proc/1/environ から平文で読み出せてしまうため。
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
     ports:
-      # ホスト側はネイティブPostgreSQL(5432)と競合するため5433を使用
-      - "5433:5432"
+      # ホスト側はネイティブPostgreSQL(5432)と競合するため5433を使用。
+      # 127.0.0.1 に限定し、LAN など外部ネットワークからの到達を遮断する。
+      - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    security_opt:
+      # setuid バイナリ等による権限昇格を禁止する
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      # postgres の初期化（PGDATA の chown）と gosu による権限降格に必要な最小セット
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    deploy:
+      resources:
+        limits:
+          # 暴走クエリがホスト全体のメモリ/CPUを食い潰すのを防ぐ
+          memory: 1g
+          cpus: "2.0"
+    logging:
+      # 無制限のログ増加によるディスク枯渇を防ぐ
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jnavi} -d ${POSTGRES_DB:-jnavi}"]
       interval: 5s
       timeout: 3s
       retries: 10
+      # 初期化中に unhealthy と誤判定されるのを避ける
+      start_period: 20s
+
+secrets:
+  postgres_password:
+    # 改行なしで書き込むこと。ファイルは .gitignore 済み（secrets/）。
+    file: ./secrets/postgres_password
 
 volumes:
   pgdata:
