@@ -28,7 +28,11 @@ jobs:
       security-events: write # SARIF を Security タブへ送るために必要
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      # アクションはすべて可変タグではなくコミットSHAで固定する。
+      # タグは付け替え可能なため、固定しないと GITHUB_TOKEN を読める位置で
+      # 未レビューのコードが実行されうる（tj-actions/changed-files 侵害の手口）。
+      # 同一行のタグコメントは Dependabot が SHA と一緒に更新する。
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: docker-compose.yml からイメージを抽出
         id: image
@@ -53,7 +57,7 @@ jobs:
       #   → 除外しないと恒久的に赤になり、本当の CVE が埋もれるため意図的に除外する。
       #   除外分は後続ステップでサマリに掲示し、隠蔽にならないようにしている。
       - name: 脆弱性ゲート (gosu 以外に CRITICAL/HIGH があれば失敗)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ steps.image.outputs.ref }}
           scanners: vuln
@@ -66,7 +70,7 @@ jobs:
       # --- Security タブ連携 -------------------------------------------------
       - name: SARIF 生成 (全 severity)
         if: always()
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ steps.image.outputs.ref }}
           scanners: vuln
@@ -76,7 +80,7 @@ jobs:
 
       - name: SARIF を Code scanning へアップロード
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@f3712979fa5f215279b101dd0a2e3bdfb4353324 # v3
         with:
           sarif_file: trivy-results.sarif
           category: trivy-container
@@ -88,7 +92,7 @@ jobs:
       - name: 除外分の再スキャン (参考情報)
         if: always()
         continue-on-error: true
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ steps.image.outputs.ref }}
           scanners: vuln
