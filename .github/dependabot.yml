@@ -1,0 +1,36 @@
+version: 2
+
+updates:
+  # docker-compose.yml のイメージ更新。
+  # イメージはダイジェスト固定しているため `docker compose pull` では新しくならない。
+  # Dependabot がタグ据え置きのままダイジェストを追従させ、更新PRを自動生成する。
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
+    ignore:
+      # メジャー更新(16 -> 17)はデータ移行(pg_upgrade)が必要なため自動PRの対象外にする。
+      # 移行は計画的に手動で実施すること。
+      - dependency-name: "postgres"
+        update-types:
+          - "version-update:semver-major"
+
+  # 下の container-scan.yml が使う各アクションを最新に保つ
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "chore(ci)"

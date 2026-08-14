@@ -1,0 +1,134 @@
+name: Container Scan
+
+on:
+  pull_request:
+    paths:
+      - "docker-compose.yml"
+      - ".github/workflows/container-scan.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docker-compose.yml"
+      - ".github/workflows/container-scan.yml"
+  # イメージが変わらなくても新しい CVE は公開されるため、定期実行で検知する。
+  # 週次スキャンの失敗が「更新が必要になった」の通知になる。
+  schedule:
+    - cron: "0 0 * * 1" # 毎週月曜 09:00 JST (00:00 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Trivy image scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # SARIF を Security タブへ送るために必要
+
+    steps:
+      # アクションはすべて可変タグではなくコミットSHAで固定する。
+      # タグは付け替え可能なため、固定しないと GITHUB_TOKEN を読める位置で
+      # 未レビューのコードが実行されうる（tj-actions/changed-files 侵害の手口）。
+      # 同一行のタグコメントは Dependabot が SHA と一緒に更新する。
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 既定(true)だと GITHUB_TOKEN が .git/config の extraheader として
+          # ワークスペースに残り、以降の全ステップから読み取れてしまう。
+          # このジョブは認証済み git 操作を行わない（Trivy はリモートイメージを見るだけ、
+          # SARIF アップロードは API を使う）ため、保持せず破棄する。
+          persist-credentials: false
+
+      - name: docker-compose.yml からイメージを抽出
+        id: image
+        run: |
+          set -euo pipefail
+          image=$(grep -oE '^[[:space:]]*image:[[:space:]]*\S+' docker-compose.yml \
+            | head -1 | sed -E 's/.*image:[[:space:]]*//')
+          if [ -z "$image" ]; then
+            echo "::error::docker-compose.yml から image を抽出できませんでした"
+            exit 1
+          fi
+          echo "ref=$image" >> "$GITHUB_OUTPUT"
+          echo "対象イメージ: $image"
+
+      # --- 判定ゲート -------------------------------------------------------
+      # gosu を除外する理由:
+      #   postgres 公式イメージ同梱の /usr/local/bin/gosu は古い Go でビルドされており、
+      #   Go 標準ライブラリ由来の CRITICAL/HIGH が常時数十件検出される。
+      #   ただし gosu は起動時に uid/gid を切り替えて exec するだけで外部入力を一切パースせず、
+      #   該当 CVE の大半は net/http・crypto/x509 など実行されないコードパスにある。
+      #   上流未解決: https://github.com/docker-library/postgres/issues/1324
+      #   → 除外しないと恒久的に赤になり、本当の CVE が埋もれるため意図的に除外する。
+      #   除外分はゲート成功時に後続ステップでサマリへ掲示し、隠蔽にならないようにしている。
+      - name: 脆弱性ゲート (gosu 以外に CRITICAL/HIGH があれば失敗)
+        id: vulnerability_gate
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: false
+          skip-files: usr/local/bin/gosu
+          format: table
+
+      # --- Security タブ連携 -------------------------------------------------
+      - name: SARIF 生成 (全 severity)
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          scanners: vuln
+          skip-files: usr/local/bin/gosu
+          format: sarif
+          output: trivy-results.sarif
+
+      - name: SARIF を Code scanning へアップロード
+        if: always()
+        uses: github/codeql-action/upload-sarif@f3712979fa5f215279b101dd0a2e3bdfb4353324 # v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-container
+
+      # --- 除外分の可視化 ---------------------------------------------------
+      # ゲートから外した gosu の検出結果を、参考情報としてジョブサマリに残す。
+      # 「除外した＝無かったこと」にしないための記録。
+      # 除外せずに再スキャンし、gosu 由来の検出を一覧化する（判定はしない）。
+      #
+      # ゲート成功時のみ実行する点が重要。この再スキャンは skip-files を付けないため
+      # 出力には「gosu 由来」と「それ以外」が混在しうるが、ゲートが成功している
+      # ＝ gosu 以外に CRITICAL/HIGH は存在しない、が保証されるため、
+      # その条件下でのみ「全件 = gosu 由来」と言い切れる。
+      # 無条件に実行すると、ゲートを落とした本物の CVE を
+      # 「除外済みの既知ノイズ」として誤って提示してしまう。
+      - name: 除外分の再スキャン (参考情報)
+        if: ${{ always() && steps.vulnerability_gate.outcome == 'success' }}
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+          format: template
+          template: '{{ range . }}{{ range .Vulnerabilities }}{{ .VulnerabilityID }} ({{ .Severity }}) {{ .PkgName }}{{ "\n" }}{{ end }}{{ end }}'
+          output: excluded.txt
+
+      - name: 除外した gosu の検出内容をサマリに掲示
+        if: ${{ always() && steps.vulnerability_gate.outcome == 'success' }}
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          {
+            echo "### 参考: ゲートから除外した gosu の検出結果"
+            echo
+            echo "以下は \`/usr/local/bin/gosu\` 由来のため判定対象外にしています。"
+            echo "上流 issue が解決したら \`skip-files\` を外してください →"
+            echo "[docker-library/postgres#1324](https://github.com/docker-library/postgres/issues/1324)"
+            echo
+            echo '```'
+            sort -u excluded.txt 2>/dev/null || echo "(取得できませんでした)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

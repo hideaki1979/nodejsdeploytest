@@ -1,10 +1,16 @@
 node_modules/
 .env
 .DS_Store
-.github/
+# .github 配下は原則無視のまま（copilot-instructions.md や prompts/ は従来通り追跡しない）。
+# ただし CI を動かすにはワークフローと Dependabot 設定がコミットされている必要があるため、
+# この2つだけ明示的に追跡対象へ戻す。
+.github/*
+!.github/workflows/
+!.github/dependabot.yml
 dist/
 logs/
 *.log
 coverage/
 jnaviproject-firebase-adminsdk-fbsvc-f96e2396e1.json
 /.cursor/rules/
+secrets/
