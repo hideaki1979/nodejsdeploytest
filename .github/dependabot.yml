@@ -34,3 +34,43 @@ updates:
       - "ci"
     commit-message:
       prefix: "chore(ci)"
+
+  # npm 依存の更新。
+  # 本プロジェクトはテストが無く（npm test は未実装）、ビルド検証のCIも無いため、
+  # 自動PRを検証する手段が現状ない。したがって以下の方針を取る:
+  #   - メジャー更新は対象外。破壊的変更を含み、計画的な移行が必要なため
+  #     （2026-08時点で Express 4->5 / Prisma 6->7 / TypeScript 5->7 / multer 1->2 等が該当）
+  #   - マイナー/パッチはまとめて1PRにし、レビュー負荷を抑える
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # 本番依存とdev依存を分けてまとめる。片方が壊れた際の切り分けを容易にするため。
+      production-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      development-minor-patch:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # メジャー更新は自動PRを出さない（手動で計画して実施する）。
+      # セキュリティ脆弱性が出た場合は Dependabot security updates が
+      # この ignore とは別経路でPRを作るため、緊急対応は妨げられない。
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
