@@ -33,6 +33,12 @@ jobs:
       # 未レビューのコードが実行されうる（tj-actions/changed-files 侵害の手口）。
       # 同一行のタグコメントは Dependabot が SHA と一緒に更新する。
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 既定(true)だと GITHUB_TOKEN が .git/config の extraheader として
+          # ワークスペースに残り、以降の全ステップから読み取れてしまう。
+          # このジョブは認証済み git 操作を行わない（Trivy はリモートイメージを見るだけ、
+          # SARIF アップロードは API を使う）ため、保持せず破棄する。
+          persist-credentials: false
 
       - name: docker-compose.yml からイメージを抽出
         id: image
