@@ -1,0 +1,76 @@
+name: Build
+
+# Dependabot が毎週 npm の更新PRを作るが、それが壊れているかを判定する手段が
+# これまで存在しなかった（container-scan.yml は docker-compose.yml しか見ない）。
+# テストは未整備のため、まず `tsc` を CI で通すことで
+# 「削除・改名されたAPI」「型シグネチャの変更」「@types/* とランタイムの不整合」を
+# 機械的に検出できるようにする。
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "eslint.config.mjs"
+      - "src/**"
+      - "prisma/**"
+      - ".github/workflows/build.yml"
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "eslint.config.mjs"
+      - "src/**"
+      - "prisma/**"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同一PRへ連続でpushした際、古い実行を打ち切って無駄な実行時間を使わない。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Type check & lint
+    runs-on: ubuntu-latest
+
+    steps:
+      # アクションはすべて可変タグではなくコミットSHAで固定する。
+      # 理由は container-scan.yml のコメントを参照。
+      # 同一行のタグコメントは Dependabot が SHA と一緒に更新する。
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # このジョブは認証済み git 操作を行わないため、
+          # GITHUB_TOKEN を .git/config に残さない。
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # package.json の engines.node が ">=22" のため 22 系に合わせる。
+          node-version: "22"
+          cache: "npm"
+
+      # `npm install` ではなく `npm ci` を使う。
+      # lockfile に厳密に従い、peer依存の衝突も検出できるため。
+      # 実際 express 5 への更新PR(#58)は、この段階で
+      # express-async-errors との peer 衝突により失敗した。
+      - name: 依存インストール
+        run: npm ci
+
+      # postinstall でも走るが、Prisma 側の失敗を独立したステップとして
+      # 切り分けられるように明示的に実行する。
+      # 接続先DBは不要（スキーマからクライアントを生成するだけ）。
+      - name: Prisma Client 生成
+        run: npx prisma generate
+
+      - name: 型チェック
+        run: npm run build
+
+      - name: Lint
+        run: npx eslint src
