@@ -25,6 +25,24 @@ const getFirebaseErrorCode = (error: unknown): string | undefined => {
     return undefined
 }
 
+/**
+ * 公開鍵の取得失敗かどうかを判定する。
+ *
+ * firebase-admin は署名検証中の例外を mapJwtErrorToAuthError で
+ * すべて auth/argument-error に潰す（KEY_FETCH_ERROR 専用の分岐が無い）ため、
+ * 改竄トークンと鍵取得失敗をエラーコードでは区別できない。
+ * 唯一の手掛かりがメッセージなので、SDKが鍵取得経路でのみ生成する
+ * 接頭辞に限定して判定する。
+ * SDK側の文言が変われば判定が外れて従来どおり401に落ちるだけで、
+ * 無効なトークンを誤って通すことはない。
+ */
+const isPublicKeyFetchFailure = (error: unknown): boolean =>
+    error instanceof Error &&
+    // 証明書エンドポイントがエラー応答を返した場合（UrlKeyFetcher）
+    (error.message.startsWith('Error fetching public keys for Google certs:') ||
+        // DNS断・接続失敗などHTTP層の失敗（HttpClient）
+        error.message.startsWith('Error while making request:'))
+
 export const authenticateUser = async (
     req: Request,
     res: Response,
@@ -113,7 +131,9 @@ export const authenticateUser = async (
         if (
             code === 'app/network-error' ||
             code === 'app/network-timeout' ||
-            code === 'auth/internal-error'
+            code === 'auth/internal-error' ||
+            // 公開鍵の取得失敗も auth/argument-error に潰されて届くため個別に判定する
+            (code === 'auth/argument-error' && isPublicKeyFetchFailure(error))
         ) {
             res.status(503).json({
                 status: 'AuthServiceUnavailable',
