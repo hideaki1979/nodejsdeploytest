@@ -1,6 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2020",
+    // 実行環境は engines.node が ">=24" のため ES2022 の組み込みAPIは全て利用できる。
+    // target を上げると useDefineForClassFields の既定値が変わり emit が変化するため、
+    // 出力は ES2020 のまま据え置き、型定義(lib)だけを実行環境に合わせる。
+    // これにより new Error(msg, { cause }) の ErrorOptions が解決できる。
+    "lib": ["ES2022"],
     "module": "commonjs",
     "strict": true,
     "esModuleInterop": true,

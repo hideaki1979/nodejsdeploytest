@@ -33,11 +33,11 @@ export class UserService {
             // Prismaエラーハンドリング
             if (error instanceof Error && 'code' in error) {
                 if (error.code === 'P2002') {
-                    throw new Error('このメールアドレスまたはUIDは既に登録されています')
+                    throw new Error('このメールアドレスまたはUIDは既に登録されています', { cause: error })
                 }
             }
 
-            throw new Error('ユーザー情報の作成に失敗しました')
+            throw new Error('ユーザー情報の作成に失敗しました', { cause: error })
         }
     }
 
@@ -51,7 +51,7 @@ export class UserService {
             return user
         } catch (error) {
             this.logger.error({ error, method: 'getIdToken' }, 'ユーザー情報の取得に失敗しました')
-            throw new Error('ユーザー情報の取得に失敗しました')
+            throw new Error('ユーザー情報の取得に失敗しました', { cause: error })
         }
     }
 }
