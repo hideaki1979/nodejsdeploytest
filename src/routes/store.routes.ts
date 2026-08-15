@@ -42,6 +42,8 @@ const storeRouter = Router()
  *         description: 認証トークンが無効、または設定されていません。
  *       '500':
  *         description: サーバーエラー。
+ *       '503':
+ *         description: 認証サービスに接続できません。時間をおいて再試行してください。
  */
 storeRouter.post('/', authenticateUser, storeValidationRules, handleValidationErrors, createHandler(StoreController, "createStore"))
 
@@ -146,6 +148,8 @@ storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
  *         description: 認証トークンが無効、または設定されていません。
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
+ *       '503':
+ *         description: 認証サービスに接続できません。時間をおいて再試行してください。
  */
 storeRouter.put('/:id', authenticateUser, storeValidationRules, handleValidationErrors, createHandler(StoreController, 'updateStore'))
 
@@ -196,6 +200,8 @@ storeRouter.put('/:id', authenticateUser, storeValidationRules, handleValidation
  *         description: 認証トークンが無効、または設定されていません。
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
+ *       '503':
+ *         description: 認証サービスに接続できません。時間をおいて再試行してください。
  */
 storeRouter.patch('/:id/close', authenticateUser, storeCloseValidationRules, handleValidationErrors, createHandler(StoreController, 'storeClose'))
 

@@ -55,6 +55,8 @@ const imageRouter = Router({ mergeParams: true })
  *         description: 認証されていません。
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
+ *       '503':
+ *         description: 認証サービスに接続できません。時間をおいて再試行してください。
  */
 imageRouter.post('/', authenticateUser, imageUploadValidationRules, handleValidationErrors, createHandler(ImageController, 'uploadStoreImage'))
 /**
@@ -181,6 +183,8 @@ imageRouter.get(`/:imageId`, imageGetValidationRules, handleValidationErrors, cr
  *         description: 権限がありません。
  *       '404':
  *         $ref: '#/components/responses/ImageNotFound'
+ *       '503':
+ *         description: 認証サービスに接続できません。時間をおいて再試行してください。
  */
 imageRouter.put(`/:imageId`, authenticateUser, imageUpdateValidationRules, handleValidationErrors, createHandler(ImageController, 'updateStoreImage'))
 /**
@@ -223,6 +227,8 @@ imageRouter.put(`/:imageId`, authenticateUser, imageUpdateValidationRules, handl
  *         description: 権限がありません。
  *       '404':
  *         $ref: '#/components/responses/ImageNotFound'
+ *       '503':
+ *         description: 認証サービスに接続できません。時間をおいて再試行してください。
  */
 imageRouter.delete(`/:imageId`, authenticateUser, imageGetValidationRules, handleValidationErrors, createHandler(ImageController, 'deleteStoreImage'))
 export { imageRouter }
