@@ -11,7 +11,9 @@ import path from 'path'
 dotenv.config({ path: path.resolve(__dirname, '../.env'), quiet: true })
 
 import 'reflect-metadata'
-import 'express-async-errors'
+// express-async-errors は Express 5 では不要（peer が express@^4 のため共存もできない）。
+// Express 5 は async ハンドラ・ミドルウェアの reject を
+// 標準でエラーハンドラへ転送する。
 import express from 'express'
 import cors from 'cors'
 import router from './routes/routes'
