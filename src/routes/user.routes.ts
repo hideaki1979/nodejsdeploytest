@@ -41,6 +41,8 @@ const userRouter = Router()
  *         description: 認証エラー
  *       '500':
  *         description: サーバーエラー
+ *       '503':
+ *         description: 認証サービスに接続できません。時間をおいて再試行してください。
  */
 userRouter.post(`/`, authenticateUser, userValidationRules, handleValidationErrors, createHandler(UserController, 'createUser')
 )
@@ -76,6 +78,8 @@ userRouter.post(`/`, authenticateUser, userValidationRules, handleValidationErro
  *         description: ユーザーが見つかりません
  *       '500':
  *         description: サーバーエラー
+ *       '503':
+ *         description: 認証サービスに接続できません。時間をおいて再試行してください。
  */
 userRouter.get('/:uid', authenticateUser, createHandler(UserController, 'getUserByUid'))
 export { userRouter }
