@@ -60,8 +60,8 @@ J.Navi API は、二郎系ラーメン愛好家のための専門的な店舗情
 
 | カテゴリ                 | 技術・ライブラリ                                                                                                                                           | バージョン  | 用途                               |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------- |
-| **言語**                 | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="20" height="20" alt="TypeScript Logo"/> TypeScript | 5.8.2       | 型安全性の確保                     |
-| **ランタイム**           | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="20" height="20" alt="Node.js Logo"/> Node.js               | 22.x 以上   | JavaScript 実行環境                |
+| **言語**                 | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="20" height="20" alt="TypeScript Logo"/> TypeScript | 6.0.3       | 型安全性の確保                     |
+| **ランタイム**           | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="20" height="20" alt="Node.js Logo"/> Node.js               | 24.x 以上   | JavaScript 実行環境                |
 | **フレームワーク**       | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg" width="20" height="20" alt="Express Logo"/> Express             | 4.21.2      | Web アプリケーションフレームワーク |
 | **データベース**         | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="20" height="20" alt="PostgreSQL Logo"/> PostgreSQL | 16.x 以上   | リレーショナルデータベース         |
 | **ORM**                  | Prisma                                                                                                                                                     | 7.9.1       | データベース操作・マイグレーション |
@@ -252,7 +252,7 @@ erDiagram
 
 ### 前提条件
 
-- Node.js (v22 以上 ※ firebase-admin v14 の要件)
+- Node.js (v24 以上 ※ v22 は 2027-04-30 に EOL。現時点の Active LTS である 24 を基準とする)
 - PostgreSQL (v16 以上)
 - Firebase プロジェクトの設定
 
