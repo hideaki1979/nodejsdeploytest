@@ -8,6 +8,10 @@ node_modules/
 !.github/workflows/
 !.github/dependabot.yml
 dist/
+# Prisma 7 の prisma-client ジェネレータが出力する TypeScript。
+# tsc の対象に含める必要があるため src 配下に置いているが、
+# 生成物なのでコミットはしない（CI は build 前に prisma generate を実行する）。
+src/generated/
 logs/
 *.log
 coverage/

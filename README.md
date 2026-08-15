@@ -64,7 +64,7 @@ J.Navi API は、二郎系ラーメン愛好家のための専門的な店舗情
 | **ランタイム**           | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="20" height="20" alt="Node.js Logo"/> Node.js               | 22.x 以上   | JavaScript 実行環境                |
 | **フレームワーク**       | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg" width="20" height="20" alt="Express Logo"/> Express             | 4.21.2      | Web アプリケーションフレームワーク |
 | **データベース**         | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="20" height="20" alt="PostgreSQL Logo"/> PostgreSQL | 16.x 以上   | リレーショナルデータベース         |
-| **ORM**                  | Prisma                                                                                                                                                     | 6.6.0       | データベース操作・マイグレーション |
+| **ORM**                  | Prisma                                                                                                                                                     | 7.9.1       | データベース操作・マイグレーション |
 | **認証・ストレージ**     | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-plain.svg" width="20" height="20" alt="Firebase Logo"/> Firebase            | 14.2.0      | 認証・ファイルストレージ           |
 | **HTTP クライアント**    | <img src="https://axios-http.com/assets/favicon.ico" width="20" height="20" alt="Axios Logo"/> Axios                                                       | 1.8.1       | API 通信                           |
 | **バリデーション**       | express-validator                                                                                                                                          | 7.2.1       | 入力値バリデーション               |
@@ -301,9 +301,15 @@ PRISMA_TRANSACTION_TIMEOUT="60000"
 # Prisma マイグレーション実行
 npx prisma migrate dev
 
+# Prisma Client の生成（src/generated/ 配下に出力される）
+# 生成物はコミットされないため、クローン直後は必ず実行する
+npx prisma generate
+
 # データベースシード実行（オプション）
 npx prisma db seed
 ```
+
+> **補足**: Prisma 7 から接続情報は `schema.prisma` ではなくルートの `prisma.config.ts` に記述します（マイグレーション用）。アプリケーション実行時の接続は `@prisma/adapter-pg` 経由で `src/app.ts` が設定します。いずれも `DATABASE_URL` を参照するため、設定箇所は `.env` のみです。
 
 ### 4. アプリケーション起動
 
@@ -391,6 +397,8 @@ src/
 │   ├── env.ts              # 環境変数ユーティリティ
 │   └── routeHandler.ts     # ルートハンドラー
 ├── di.token.ts             # DI トークン定義
+├── generated/               # Prisma が生成するクライアント（git 管理外）
+│   └── prisma/             # npx prisma generate で作成される
 └── db/                     # データベース関連
     └── setupTriggers.ts    # データベーストリガー設定
 ```

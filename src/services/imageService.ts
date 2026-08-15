@@ -1,7 +1,7 @@
 import { StoreImageDownloadData, StoreImageEditData, StoreImageUploadData } from "../types/image";
 import { randomUUID } from 'node:crypto'
 import { bucket } from "../config/firebase";
-import { Image, Prisma, PrismaClient } from "@prisma/client";
+import { Image, Prisma, PrismaClient } from "../generated/prisma/client";
 import { inject, injectable } from "tsyringe";
 import { AppError } from "../middlewares/errorMiddleware";
 import { pinoLogger, PRISMA_CLIENT } from "../di.token";

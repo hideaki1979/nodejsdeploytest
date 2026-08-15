@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { User } from "../types/user";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma/client";
 import { pinoLogger, PRISMA_CLIENT } from "../di.token";
 import { Logger } from "pino";
 

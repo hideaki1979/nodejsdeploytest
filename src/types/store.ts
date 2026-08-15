@@ -1,6 +1,6 @@
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "./toppingCallOption";
 import { ValidationError } from "express-validator";
-import { Store, Map, StoreToppingCall, Prisma } from "@prisma/client";
+import { Store, Map, StoreToppingCall, Prisma } from "../generated/prisma/client";
 
 /**
  * @swagger

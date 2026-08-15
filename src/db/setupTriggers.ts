@@ -1,6 +1,21 @@
-import { PrismaClient } from "@prisma/client"
+import dotenv from "dotenv"
+import path from "path"
+import { PrismaClient } from "../generated/prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
 
-const prisma = new PrismaClient()
+// このスクリプトは単体で実行されるため、.env を自前で読み込む。
+// Prisma 6 までは schema.prisma の env("DATABASE_URL") を Prisma が解決し、
+// .env の読み込みも Prisma 側で行われていたが、
+// Prisma 7 では接続をドライバアダプタで渡すため、いずれも自前で行う必要がある。
+dotenv.config({ path: path.resolve(__dirname, "../../.env"), quiet: true })
+
+const connectionString = process.env.DATABASE_URL
+if (!connectionString) {
+    console.error("DATABASE_URL が環境変数として定義されていません")
+    process.exit(1)
+}
+
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
 
 /**
  * テーブル存在確認用の型定義

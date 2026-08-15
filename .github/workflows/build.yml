@@ -14,6 +14,7 @@ on:
       - "eslint.config.mjs"
       - "src/**"
       - "prisma/**"
+      - "prisma.config.ts"
       - ".github/workflows/build.yml"
   push:
     branches: [main]
@@ -24,6 +25,7 @@ on:
       - "eslint.config.mjs"
       - "src/**"
       - "prisma/**"
+      - "prisma.config.ts"
       - ".github/workflows/build.yml"
   workflow_dispatch:
 
