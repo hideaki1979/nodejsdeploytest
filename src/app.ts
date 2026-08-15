@@ -21,7 +21,8 @@ import config from './config/config'
 import { setupBigIntSerialization } from './utils/bigintExtension'
 import './config/firebase'
 import { AppError, errorMiddleware } from './middlewares/errorMiddleware'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from './generated/prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { container } from 'tsyringe'
 import { GOOGLE_MAP_API_KEY, pinoLogger, PRISMA_CLIENT } from './di.token'
 import helmet from 'helmet'
@@ -33,8 +34,14 @@ import { pinoHttp } from 'pino-http'
 /**
  * PrismaClientのインスタンスをDIコンテナに登録
  * アプリケーション全体で単一のインスタンスを共有する
+ *
+ * Prisma 7 から datasource の url を schema.prisma に書けなくなったため、
+ * 実行時の接続はドライバアダプタ経由で行う。
+ * CLI（migrate / generate）側の接続情報は prisma.config.ts にある。
  */
+const adapter = new PrismaPg({ connectionString: config.db.databaseUrl })
 const prisma = new PrismaClient({
+  adapter,
   transactionOptions: {
     maxWait: config.prisma.transactionMaxWait,  // トランザクション開始の最大待機時間（10秒）
     timeout: config.prisma.transactionTimeout   // トランザクション全体の最大実行時間（60秒）

@@ -1,5 +1,5 @@
 import { ValidationError } from "express-validator";
-import { Image, ImageStoreToppingCall } from "@prisma/client";
+import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
 
 /**
  * @swagger

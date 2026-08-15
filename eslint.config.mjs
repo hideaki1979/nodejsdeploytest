@@ -5,6 +5,8 @@ import tseslint from "typescript-eslint";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+  // Prisma が生成する TypeScript は Lint の対象外にする（自動生成物のため）
+  { ignores: ["src/generated/**", "dist/**"] },
   { files: ["**/*.{js,mjs,cjs,ts}"] },
   { files: ["**/*.js"], languageOptions: { sourceType: "script" } },
   { languageOptions: { globals: globals.browser } },

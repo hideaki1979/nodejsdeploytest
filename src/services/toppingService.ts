@@ -1,6 +1,6 @@
 import { inject, injectable } from "tsyringe";
 import { ResultToppingCall } from "../types/toppingCallOption";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma/client";
 import { PRISMA_CLIENT } from "../di.token";
 
 @injectable()

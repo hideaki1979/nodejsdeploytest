@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, StoreToppingCall } from "@prisma/client";
+import { Prisma, PrismaClient, StoreToppingCall } from "../generated/prisma/client";
 import { GeocodingResult, StoreData, StoreToppingCallFilter } from "../types/store";
 import { GeocodingService } from "./geocodingService"
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "../types/toppingCallOption";

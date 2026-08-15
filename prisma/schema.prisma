@@ -1,14 +1,22 @@
 // Prismaクライアントの生成設定
+//
+// Prisma 7 で generator は "prisma-client-js" から "prisma-client" に変わった。
+// 新ジェネレータは TypeScript を出力するため、出力先は node_modules 配下ではなく
+// tsconfig の include（src 配下）に置き、tsc でまとめてコンパイルする。
 generator client {
-  provider        = "prisma-client-js"
+  provider        = "prisma-client"
   previewFeatures = ["postgresqlExtensions"] // PostgreSQL拡張機能のサポートを有効化
-  output          = "../node_modules/.prisma/client" // 出力パスを明示的に指定
+  output          = "../src/generated/prisma"
+  moduleFormat    = "cjs" // 本プロジェクトは module: commonjs でビルドする
 }
 
 // データベース接続設定
+//
+// Prisma 7 から datasource に url を書けなくなった。
+// - Migrate（CLI）用の接続情報は prisma.config.ts に記述する
+// - 実行時の接続は PrismaClient にドライバアダプタ（@prisma/adapter-pg）を渡す
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // 環境変数からDB接続URLを取得
 }
 
 // 店舗情報を管理するモデル
