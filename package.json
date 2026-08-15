@@ -27,7 +27,6 @@
     "firebase-admin": "^14.2.0",
     "helmet": "^8.3.0",
     "morgan": "^1.10.0",
-    "multer": "^2.2.0",
     "node-geocoder": "^4.4.1",
     "pg": "^8.23.0",
     "pino": "^9.7.0",
