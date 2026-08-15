@@ -1,5 +1,5 @@
 import { StoreImageDownloadData, StoreImageEditData, StoreImageUploadData } from "../types/image";
-import { v4 as uuidv4 } from 'uuid'
+import { randomUUID } from 'node:crypto'
 import { bucket } from "../config/firebase";
 import { Image, Prisma, PrismaClient } from "@prisma/client";
 import { inject, injectable } from "tsyringe";
@@ -423,7 +423,7 @@ export class ImageService {
 
         // ファイルパスの生成（UUID + タイムスタンプで一意性を確保）
         const timestamp = Date.now()
-        const fileName = `stores/${storeId}/${uuidv4()}_${timestamp}${fileExtension}`
+        const fileName = `stores/${storeId}/${randomUUID()}_${timestamp}${fileExtension}`
 
         // FireBase Storageにアップロード
         const file = bucket.file(fileName)
