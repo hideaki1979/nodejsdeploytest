@@ -3,7 +3,12 @@ import path from 'path'
 
 //.envファイルを読み込む
 // この処理は他のどのimportよりも先に実行される必要がある
-dotenv.config({ path: path.resolve(__dirname, '../.env') })
+//
+// quiet: true は必須。dotenv 17 から既定で
+// 「◇ injected env (N) from .env // tip: ...」というバナーを標準出力に出すようになった。
+// 本アプリは pino で構造化ログ(JSON)を出力するため、
+// 非JSONの行が混ざるとログ収集側のパースが壊れる。
+dotenv.config({ path: path.resolve(__dirname, '../.env'), quiet: true })
 
 import 'reflect-metadata'
 import 'express-async-errors'
