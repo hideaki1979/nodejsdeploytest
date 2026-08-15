@@ -20,6 +20,12 @@ updates:
     ignore:
       # メジャー更新(16 -> 17)はデータ移行(pg_upgrade)が必要なため自動PRの対象外にする。
       # 移行は計画的に手動で実施すること。
+      #
+      # ignore はセキュリティ更新にも適用されうるが、ここでは許容できる。
+      # PostgreSQL はサポート中のメジャー系列すべてにセキュリティ修正を
+      # バックポートするため（16系のサポートは2028年11月まで）、
+      # 脆弱性修正がメジャー更新を要する状況は事実上発生しない。
+      # npm 側でメジャーを ignore していないのはこの前提が成り立たないため。
       - dependency-name: "postgres"
         update-types:
           - "version-update:semver-major"
@@ -34,3 +40,49 @@ updates:
       - "ci"
     commit-message:
       prefix: "chore(ci)"
+
+  # npm 依存の更新。
+  #
+  # メジャー更新を ignore しない理由:
+  #   ignore はバージョン更新とセキュリティ更新の両方に適用される。
+  #   メジャーを一律 ignore すると、修正にメジャー更新を要する脆弱性の
+  #   PRまで抑止されうる。実際 multer は 1.x 系に high 8件の脆弱性があり
+  #   修正は 2.x へのメジャー更新でしか得られない。
+  #   そのため「抑止」ではなく「グループ化」でノイズを抑える方針を取る。
+  #
+  # グループ分けの意図:
+  #   本番/dev/メジャーを分け、片方が壊れた際の切り分けを容易にする。
+  #   メジャーは1PRにまとまるため、破壊的変更をまとめてレビューできる。
+  #   Dependabot は自動マージしないので、判断の機会は必ず残る。
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # 本番依存とdev依存を分けてまとめる。片方が壊れた際の切り分けを容易にするため。
+      production-minor-patch:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      development-minor-patch:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      # メジャー更新は破壊的変更を含むため、まとめて1PRにする。
+      # 抑止はしない（上記の理由による）が、日常の更新とは分離して
+      # 「計画して対応するもの」として扱えるようにする。
+      major-updates:
+        update-types:
+          - "major"
