@@ -15,7 +15,9 @@ const logger = pino({
                 options: {
                     colorize: true,
                     translateTime: 'SYS:yyyy-mm-dd HH:MM:ss',
-                    ignore: 'pid.hostname'
+                    // pino-pretty の ignore はカンマ区切りのキー一覧。
+                    // ドットはネストしたキーの区切りになるため 'pid.hostname' では抑止されない。
+                    ignore: 'pid,hostname'
                 }
             } : undefined
 })
