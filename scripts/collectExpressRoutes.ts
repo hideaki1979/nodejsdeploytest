@@ -155,9 +155,24 @@ function walk(router: object, prefix: string, records: Map<object, RouterRecord>
 }
 
 /**
+ * 収集結果はプロセス単位でキャッシュする。
+ *
+ * 記録は Router の生成時にしか行えないが、src/routes/routes.ts は
+ * 一度 require された時点で require キャッシュに載り、2回目以降は Router が
+ * 生成されない。キャッシュしないと2回目の呼び出しが 0 件を返し、
+ * 「全オペレーションが未実装」という誤った検出結果になる。
+ *
+ * ルーターツリーはモジュールのシングルトンで、同一プロセス内では変化しない。
+ * したがって結果を使い回すのは回避策ではなく、そもそも正しい振る舞いになる。
+ */
+let cachedRoutes: ExpressRoute[] | undefined
+
+/**
  * src/routes/routes.ts のルーターツリーを走査し、実際に登録されているルートを列挙する。
  */
 export function collectExpressRoutes(): ExpressRoute[] {
+    if (cachedRoutes) return [...cachedRoutes]
+
     applyEnvFallbacks()
     stubFirebaseModule()
 
@@ -182,5 +197,7 @@ export function collectExpressRoutes(): ExpressRoute[] {
 
     const routes: ExpressRoute[] = []
     walk(rootRouter, '', records, routes)
-    return routes
+
+    cachedRoutes = routes
+    return [...cachedRoutes]
 }
