@@ -53,10 +53,15 @@ const options: swaggerJSDoc.Options = {
                         error: { type: 'string', description: 'エラーメッセージ' },
                     },
                 },
+                // authMiddleware が返す本文は { status, message } で共通だが、
+                // status の取りうる値は HTTP ステータスごとに固定されている。
+                // 1つのスキーマにまとめると 401 で AuthServiceUnavailable を、
+                // 503 で InvalidToken を許してしまい、契約テストが
+                // 実装と食い違う組み合わせを見逃すため、ステータスごとに分けて定義する。
                 AuthErrorResponse: {
                     type: 'object',
                     description: [
-                        'authMiddleware（authenticateUser）が返すエラーレスポンスの形式。',
+                        'authMiddleware（authenticateUser）が 401 で返すエラーレスポンスの形式。',
                         'errorMiddleware を経由せず自前で応答するため、',
                         'ErrorResponse（success / error）とはキーが異なる点に注意。',
                     ].join(''),
@@ -65,8 +70,8 @@ const options: swaggerJSDoc.Options = {
                         status: {
                             type: 'string',
                             description: [
-                                'クライアントが再ログインへ倒すかどうかの分岐に使うエラー種別。',
-                                'AuthServiceUnavailable のみ 503 で、それ以外は 401 で返る。',
+                                '認証に失敗した理由。クライアントはこの値で再ログインを促すかを判断する。',
+                                'AccountDisabled / AccountNotFound は再ログインしても解消しない。',
                             ].join(''),
                             enum: [
                                 'Unauthorized',
@@ -75,9 +80,28 @@ const options: swaggerJSDoc.Options = {
                                 'AccountDisabled',
                                 'AccountNotFound',
                                 'InvalidToken',
-                                'AuthServiceUnavailable',
                             ],
                             example: 'InvalidToken',
+                        },
+                        message: { type: 'string', description: 'エラーメッセージ' },
+                    },
+                },
+                AuthUnavailableResponse: {
+                    type: 'object',
+                    description: [
+                        'authMiddleware（authenticateUser）が 503 で返すエラーレスポンスの形式。',
+                        'AuthErrorResponse とキーは同じだが、status は AuthServiceUnavailable のみを取る。',
+                    ].join(''),
+                    required: ['status', 'message'],
+                    properties: {
+                        status: {
+                            type: 'string',
+                            description: [
+                                'トークンではなく認証サービス側の問題であることを示す。',
+                                'クライアントはこの値のときだけ再ログインではなく再試行へ倒す。',
+                            ].join(''),
+                            enum: ['AuthServiceUnavailable'],
+                            example: 'AuthServiceUnavailable',
                         },
                         message: { type: 'string', description: 'エラーメッセージ' },
                     },
@@ -129,7 +153,9 @@ const options: swaggerJSDoc.Options = {
                     description: [
                         '認証に失敗しました。\n\n',
                         'トークンの検証で弾かれた場合は authMiddleware が AuthErrorResponse を返す',
-                        '（status で TokenExpired / TokenRevoked などの種別が分かる）。\n',
+                        '（status で TokenExpired / TokenRevoked などの種別が分かる。',
+                        '認証サービス側の障害は 401 ではなく 503 で返るため、',
+                        'ここに AuthServiceUnavailable は現れない）。\n',
                         '検証を通過した後にコントローラ側で認証情報を確認できなかった場合のみ、',
                         'errorMiddleware 経由で ErrorResponse が返る。',
                     ].join(''),
@@ -171,7 +197,7 @@ const options: swaggerJSDoc.Options = {
                     ].join(''),
                     content: {
                         'application/json': {
-                            schema: { $ref: '#/components/schemas/AuthErrorResponse' },
+                            schema: { $ref: '#/components/schemas/AuthUnavailableResponse' },
                         },
                     },
                 },
