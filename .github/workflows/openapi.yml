@@ -24,7 +24,6 @@ on:
       - "scripts/**"
       - "tests/**"
       - "jest.config.ts"
-      - "tsconfig.test.json"
       - "prisma/**"
       - ".github/workflows/openapi.yml"
   push:
@@ -38,7 +37,6 @@ on:
       - "scripts/**"
       - "tests/**"
       - "jest.config.ts"
-      - "tsconfig.test.json"
       - "prisma/**"
       - ".github/workflows/openapi.yml"
   workflow_dispatch:
@@ -93,6 +91,7 @@ jobs:
         run: npm run openapi:check-routes
 
       # 実レスポンスを spec のスキーマで検証する（#82）。
-      # spec の全オペレーションを網羅しているかも tests/specCoverage.test.ts で確認する。
+      # spec の全オペレーションを網羅しているかは tests/globalTeardown.ts で確認する
+      # （テストファイル同士の実行順は保証されないため、全ファイル完了後に判定する）。
       - name: 契約テスト
         run: npm test
