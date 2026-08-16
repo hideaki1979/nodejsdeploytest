@@ -1,0 +1,85 @@
+name: OpenAPI
+
+# #72 で棚卸ししたとおり、@swagger JSDoc は実装から広範に乖離していた（17件中15件）。
+# 原因は「実装を変えたが JSDoc を直し忘れた」の蓄積で、内容は #73〜#75 で解消したが
+# 再発を検知する仕組みが無かった。ここでは以下の2つを回す。
+#
+#   1. swagger-jsdoc が生成した spec を @redocly/cli で lint する
+#      （$ref 切れ・未使用スキーマ・summary 欠落などを検出）
+#   2. spec の paths と Express が実際にマウントしているルート一覧を突き合わせる
+#      （#72 A-1 / A-2 の「存在しないパス」と C-4 の「未ドキュメント」を両方拾う）
+#
+# 契約テスト（jest-openapi 等によるレスポンス構造の検証）はテスト基盤の新設が必要なため、
+# 本ワークフローのスコープ外とする。
+on:
+  pull_request:
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "redocly.yaml"
+      - "src/**"
+      - "scripts/**"
+      - "prisma/**"
+      - ".github/workflows/openapi.yml"
+  push:
+    branches: [main]
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "redocly.yaml"
+      - "src/**"
+      - "scripts/**"
+      - "prisma/**"
+      - ".github/workflows/openapi.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同一PRへ連続でpushした際、古い実行を打ち切って無駄な実行時間を使わない。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  openapi:
+    name: Spec lint & route diff
+    runs-on: ubuntu-latest
+
+    steps:
+      # アクションはすべて可変タグではなくコミットSHAで固定する。
+      # 理由は container-scan.yml のコメントを参照。
+      # 同一行のタグコメントは Dependabot が SHA と一緒に更新する。
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # このジョブは認証済み git 操作を行わないため、
+          # GITHUB_TOKEN を .git/config に残さない。
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # 基準を Node 24 にしている理由は build.yml のコメントを参照。
+          node-version: "24"
+          cache: "npm"
+
+      - name: 依存インストール
+        run: npm ci
+
+      # ルート定義は controller → service と辿って src/generated/prisma を import する。
+      # 生成物はコミットしていないため、突き合わせの前に生成しておく必要がある。
+      # 接続先DBは不要（スキーマからクライアントを生成するだけ）。
+      - name: Prisma Client 生成
+        run: npx prisma generate
+
+      - name: OpenAPI spec 生成
+        run: npm run openapi:generate
+
+      - name: spec の lint
+        run: npm run openapi:lint
+
+      # スクリプトは DB にも Firebase にも接続しない（環境変数は仮値、Firebase はスタブ）。
+      # Express の Router へルートが登録された事実だけを見る。
+      - name: 実ルートとの突き合わせ
+        run: npm run openapi:check-routes

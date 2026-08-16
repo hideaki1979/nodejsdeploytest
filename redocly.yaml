@@ -1,0 +1,25 @@
+# @redocly/cli lint の設定。
+# 対象は npm run openapi:generate が出力する openapi.json（swagger-jsdoc の生成物）。
+#
+# recommended ではなく recommended-strict を使う。
+# recommended は大半のルールが warning で、lint の終了コードは error でしか 1 にならない。
+# それでは CI に組み込んでも落ちず、検知の役に立たないため、
+# 「見逃してよいルールだけ明示的に off にし、残りは全て error」という方針にする。
+extends:
+  - recommended-strict
+
+rules:
+  # 全19オペレーションに operationId が無い。
+  # operationId はクライアント生成時のメソッド名に使われるもので、
+  # 「Swaggerと実装の乖離を検知する」という本ルールセットの目的とは無関係。
+  # 付与するなら別issueとして、命名規約を決めたうえで一括で入れる。
+  operation-operationId: off
+
+  # servers に開発用の http://localhost:3000 を載せているため常に引っかかる。
+  # ローカルで Swagger UI から Try it out を実行するための意図的な設定。
+  no-server-example.com: off
+
+  # パラメータも認証も持たない GET（/, /health, /toppings, /calloptions,
+  # /toppings/calloptions/formatted, /stores, /maps）は 4xx を返さないため、
+  # 「4xx を1つ以上書け」は満たせない。書けば嘘のドキュメントになる。
+  operation-4xx-response: off

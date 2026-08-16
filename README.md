@@ -343,6 +343,9 @@ npm start
 # リンター実行
 npm run lint
 
+# OpenAPI spec の検証（生成 → lint → 実ルートとの突き合わせ）
+npm run openapi:check
+
 # Prisma Studio 起動
 npx prisma studio
 
@@ -401,6 +404,11 @@ src/
 │   └── prisma/             # npx prisma generate で作成される
 └── db/                     # データベース関連
     └── setupTriggers.ts    # データベーストリガー設定
+
+scripts/                     # 開発・CI 用スクリプト（アプリ本体には含まれない）
+├── generate-openapi.ts      # swagger-jsdoc の spec を openapi.json へ出力
+├── collectExpressRoutes.ts  # Express の実ルート一覧を収集
+└── check-openapi-routes.ts  # spec と実ルートの突き合わせ
 ```
 
 ## セキュリティ機能
@@ -453,3 +461,29 @@ src/
 🌐 **Swagger UI**: http://localhost:3000/api-docs
 
 開発サーバー起動後、上記 URL で API 仕様書を確認できます。
+
+### 実装との乖離の検知
+
+API 仕様は `src/routes/*.ts` と `src/types/*.ts` の `@swagger` JSDoc が唯一の正で、
+`swagger-jsdoc` がそれを OpenAPI spec に組み立てています。
+JSDoc は実装と別物なので、実装だけ変えて JSDoc を直し忘れると静かに乖離します
+（実際に一度 17 オペレーション中 15 件が乖離しました。issue #72）。
+
+そのため CI（`.github/workflows/openapi.yml`）で以下を回しています。ローカルでは `npm run openapi:check` で同じ検証を実行できます。
+
+| コマンド | 検証内容 |
+| --- | --- |
+| `npm run openapi:generate` | JSDoc から `openapi.json` を生成（git 管理外） |
+| `npm run openapi:lint` | `@redocly/cli` による spec の lint。`$ref` 切れ、未使用スキーマ、`summary` 欠落などを検出 |
+| `npm run openapi:check-routes` | spec の `paths` と Express が実際にマウントしているルートを突き合わせ、片側にしか存在しないオペレーションを検出 |
+
+`openapi:check-routes` はアプリを起動せず、DB にも Firebase にも接続しません
+（環境変数は仮値、Firebase モジュールはスタブ）。`express.Router` を差し替えて、
+ルートが登録された事実だけを収集しています。
+
+lint のルールセットは `redocly.yaml` で調整しています。
+`recommended` は大半のルールが warning で終了コードに影響しないため、
+`recommended-strict`（全て error）を基準に、許容するルールだけを個別に `off` にしています。
+
+レスポンス構造まで検証する契約テスト（`jest-openapi` 等）は、
+テスト基盤の新設が必要なため未導入です（issue #76）。

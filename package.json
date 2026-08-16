@@ -6,7 +6,12 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "lint": "eslint src scripts",
+    "openapi:generate": "ts-node scripts/generate-openapi.ts",
+    "openapi:lint": "redocly lint openapi.json",
+    "openapi:check-routes": "ts-node scripts/check-openapi-routes.ts",
+    "openapi:check": "npm run openapi:generate && npm run openapi:lint && npm run openapi:check-routes"
   },
   "keywords": [],
   "author": "",
@@ -38,6 +43,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@redocly/cli": "^2.46.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "@types/node": "^24.13.3",
