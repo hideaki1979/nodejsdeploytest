@@ -8,9 +8,11 @@ name: OpenAPI
 #      （$ref 切れ・未使用スキーマ・summary 欠落などを検出）
 #   2. spec の paths と Express が実際にマウントしているルート一覧を突き合わせる
 #      （#72 A-1 / A-2 の「存在しないパス」と C-4 の「未ドキュメント」を両方拾う）
+#   3. 契約テスト（#82）で、実レスポンス・実リクエストを spec で検証する
+#      （1・2 では拾えないレスポンス構造・型の乖離を検出する）
 #
-# 契約テスト（jest-openapi 等によるレスポンス構造の検証）はテスト基盤の新設が必要なため、
-# 本ワークフローのスコープ外とする。
+# いずれも DB / Firebase には接続しない。契約テストは PrismaClient を DI で、
+# Firebase とロガーを moduleNameMapper でモックへ差し替えている。
 on:
   pull_request:
     paths:
@@ -20,6 +22,8 @@ on:
       - "redocly.yaml"
       - "src/**"
       - "scripts/**"
+      - "tests/**"
+      - "jest.config.ts"
       - "prisma/**"
       - ".github/workflows/openapi.yml"
   push:
@@ -31,6 +35,8 @@ on:
       - "redocly.yaml"
       - "src/**"
       - "scripts/**"
+      - "tests/**"
+      - "jest.config.ts"
       - "prisma/**"
       - ".github/workflows/openapi.yml"
   workflow_dispatch:
@@ -83,3 +89,9 @@ jobs:
       # Express の Router へルートが登録された事実だけを見る。
       - name: 実ルートとの突き合わせ
         run: npm run openapi:check-routes
+
+      # 実レスポンスを spec のスキーマで検証する（#82）。
+      # spec の全オペレーションを網羅しているかは tests/globalTeardown.ts で確認する
+      # （テストファイル同士の実行順は保証されないため、全ファイル完了後に判定する）。
+      - name: 契約テスト
+        run: npm test

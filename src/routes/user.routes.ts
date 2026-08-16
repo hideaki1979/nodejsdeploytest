@@ -40,11 +40,11 @@ const userRouter = Router()
  *       '400':
  *         $ref: '#/components/responses/ValidationError'
  *       '401':
- *         description: 認証エラー
+ *         $ref: '#/components/responses/Unauthorized'
  *       '500':
- *         description: サーバーエラー
+ *         $ref: '#/components/responses/InternalServerError'
  *       '503':
- *         description: 認証サービスに接続できません。時間をおいて再試行してください。
+ *         $ref: '#/components/responses/AuthServiceUnavailable'
  */
 userRouter.post(`/`, authenticateUser, userValidationRules, handleValidationErrors, createHandler(UserController, 'createUser')
 )
@@ -82,15 +82,19 @@ userRouter.post(`/`, authenticateUser, userValidationRules, handleValidationErro
  *                 data:
  *                   $ref: '#/components/schemas/User'
  *       '401':
- *         description: 認証エラー
+ *         $ref: '#/components/responses/Unauthorized'
  *       '403':
  *         description: 他ユーザーの情報を参照する権限がありません
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       '404':
- *         description: ユーザーが見つかりません
+ *         $ref: '#/components/responses/UserNotFound'
  *       '500':
- *         description: サーバーエラー
+ *         $ref: '#/components/responses/InternalServerError'
  *       '503':
- *         description: 認証サービスに接続できません。時間をおいて再試行してください。
+ *         $ref: '#/components/responses/AuthServiceUnavailable'
  */
 userRouter.get('/:uid', authenticateUser, createHandler(UserController, 'getUserByUid'))
 export { userRouter }

@@ -75,6 +75,21 @@
  *             プロフィール（前後の空白除去とHTMLエスケープを行って保存される）。
  *             ユーザー情報の更新APIが無いため、設定できるのは新規登録時のみ。
  *           example: 'プロフィール情報です'
+ *   responses:
+ *      UserNotFound:
+ *          description: 指定されたユーザーが見つかりません。
+ *          content:
+ *            application/json:
+ *              schema:
+ *                type: object
+ *                required: [success, error]
+ *                properties:
+ *                  success:
+ *                    type: boolean
+ *                    example: false
+ *                  error:
+ *                    type: string
+ *                    example: 該当するユーザーが存在しません
  */
 export interface User {
     uid: string;

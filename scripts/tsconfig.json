@@ -1,0 +1,14 @@
+// 開発・CI 用スクリプトの TypeScript 設定（エディタ用）。
+//
+// 実行は ts-node がルートの tsconfig.json を使うためこの設定は経由しないが、
+// scripts/ がどの tsconfig にも属さないままだとエディタが推論プロジェクトへ
+// フォールバックし、実際には通るコードにエラーが表示される。
+// tests/tsconfig.json と同じ理由でディレクトリ直下に置く。
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true
+  },
+  "include": ["**/*"]
+}

@@ -343,6 +343,9 @@ npm start
 # リンター実行
 npm run lint
 
+# 契約テスト（実レスポンスを OpenAPI spec で検証）
+npm test
+
 # OpenAPI spec の検証（生成 → lint → 実ルートとの突き合わせ）
 npm run openapi:check
 
@@ -360,7 +363,10 @@ npx prisma migrate reset
 
 ```
 src/
-├── app.ts                    # アプリケーションエントリーポイント
+├── server.ts                 # アプリケーションエントリーポイント（依存登録 → 組み立て → listen）
+├── loadEnv.ts                # .env の読み込み（config より先に実行される必要がある）
+├── app.ts                    # createApp()：Expressアプリの組み立て（起動はしない）
+├── di.container.ts           # DIコンテナへの本番用依存の登録
 ├── config/                   # 設定ファイル
 │   ├── config.ts            # アプリケーション設定
 │   ├── firebase.ts          # Firebase 設定
@@ -406,9 +412,27 @@ src/
     └── setupTriggers.ts    # データベーストリガー設定
 
 scripts/                     # 開発・CI 用スクリプト（アプリ本体には含まれない）
+├── tsconfig.json            # エディタ用の型設定
 ├── generate-openapi.ts      # swagger-jsdoc の spec を openapi.json へ出力
 ├── collectExpressRoutes.ts  # Express の実ルート一覧を収集
 └── check-openapi-routes.ts  # spec と実ルートの突き合わせ
+
+tests/                       # 契約テスト（DB・Firebaseには接続しない）
+├── helpers/
+│   ├── testApp.ts          # createApp() + 依存のモック + リクエスト検証
+│   ├── prismaMock.ts       # PrismaClient のモック
+│   ├── responseValidator.ts # 実レスポンスを spec のスキーマで検証
+│   ├── assert.ts           # expectApiResponse などのアサーション
+│   ├── coverage.ts         # 実行されたオペレーションの記録
+│   ├── specOperations.ts   # spec のオペレーション一覧
+│   ├── env.ts              # テスト用の環境変数（setupFiles で実行）
+│   └── auth.ts             # 認証ヘッダとテストユーザーID
+├── mocks/                  # Firebase / logger の差し替え
+├── fixtures/               # Prisma の行を模したテストデータ
+├── globalSetup.ts          # 前回の網羅性記録のクリア
+├── globalTeardown.ts       # spec の全オペレーションが検証されたかの確認
+├── tsconfig.json           # テスト用の型設定（ts-jest とエディタが参照）
+└── *.test.ts               # リソース別のテスト
 ```
 
 ## セキュリティ機能
@@ -476,6 +500,7 @@ JSDoc は実装と別物なので、実装だけ変えて JSDoc を直し忘れ�
 | `npm run openapi:generate` | JSDoc から `openapi.json` を生成（git 管理外） |
 | `npm run openapi:lint` | `@redocly/cli` による spec の lint。`$ref` 切れ、未使用スキーマ、`summary` 欠落などを検出 |
 | `npm run openapi:check-routes` | spec の `paths` と Express が実際にマウントしているルートを突き合わせ、片側にしか存在しないオペレーションを検出 |
+| `npm test` | 契約テスト。実レスポンス・実リクエストを spec のスキーマで検証 |
 
 `openapi:check-routes` はアプリを起動せず、DB にも Firebase にも接続しません
 （環境変数は仮値、Firebase モジュールはスタブ）。`express.Router` を差し替えて、
@@ -485,5 +510,31 @@ lint のルールセットは `redocly.yaml` で調整しています。
 `recommended` は大半のルールが warning で終了コードに影響しないため、
 `recommended-strict`（全て error）を基準に、許容するルールだけを個別に `off` にしています。
 
-レスポンス構造まで検証する契約テスト（`jest-openapi` 等）は、
-テスト基盤の新設が必要なため未導入です（issue #76）。
+### 契約テスト
+
+パスの一致だけでは、レスポンスの構造や型の乖離は検知できません。
+`npm test` は supertest で実際にリクエストを流し、返ってきたボディを spec のスキーマで検証します。
+
+**DB にも Firebase にも接続しません。** `PrismaClient` は DI（`PRISMA_CLIENT` トークン）で
+モックへ差し替えるため、controller と service は本物のまま動きます。
+`Number()` / `String()` の違いやエンベロープの形といった乖離はこの層で起きるので、
+モックするのは DB アクセスの一段だけに留めています。
+
+検証の担当は2つに分かれています。
+
+| 対象 | 担当 |
+| --- | --- |
+| リクエストボディ・パラメータ・security | `express-openapi-validator`（テスト用の app にのみ挿入） |
+| レスポンスボディ | `tests/helpers/responseValidator.ts`（ajv） |
+
+レスポンスを `express-openapi-validator` で検証していないのは、
+あちらが `res.json()` に渡されたシリアライズ前の JS オブジェクトを見るためです。
+本プロジェクトは `setupBigIntSerialization()` で `BigInt.prototype.toJSON` を上書きして
+主キーを文字列化しており、検証時点ではまだ `BigInt` のままなので、spec が正しくても
+`must be string` と誤検知します。実際に HTTP で流れたボディをパースして検証する必要があります。
+
+エンドポイントを追加してテストを書き忘れると失敗します。網羅性は「実際に実行されたテスト」を
+根拠に判定するため（`tests/globalTeardown.ts`）、`it.skip` やコメントアウトでも検知されます。
+`npx jest tests/users.test.ts` のような絞り込み実行では自動的に判定を飛ばします。
+
+バリデーションと OpenAPI 定義を zod へ一本化し、乖離を構造的に防ぐ案は issue #83 で検討中です。

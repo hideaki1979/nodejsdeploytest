@@ -49,11 +49,11 @@ const imageRouter = Router({ mergeParams: true })
  *       '400':
  *         $ref: '#/components/responses/ValidationError'
  *       '401':
- *         description: 認証されていません。
+ *         $ref: '#/components/responses/Unauthorized'
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  *       '503':
- *         description: 認証サービスに接続できません。時間をおいて再試行してください。
+ *         $ref: '#/components/responses/AuthServiceUnavailable'
  */
 imageRouter.post('/', authenticateUser, imageUploadValidationRules, handleValidationErrors, createHandler(ImageController, 'uploadStoreImage'))
 /**
@@ -188,13 +188,13 @@ imageRouter.get(`/:imageId`, imageGetValidationRules, handleValidationErrors, cr
  *       '400':
  *         $ref: '#/components/responses/ValidationError'
  *       '401':
- *         description: 認証されていません。
+ *         $ref: '#/components/responses/Unauthorized'
  *       '403':
- *         description: 権限がありません。
+ *         $ref: '#/components/responses/Forbidden'
  *       '404':
  *         $ref: '#/components/responses/ImageNotFound'
  *       '503':
- *         description: 認証サービスに接続できません。時間をおいて再試行してください。
+ *         $ref: '#/components/responses/AuthServiceUnavailable'
  */
 imageRouter.put(`/:imageId`, authenticateUser, imageUpdateValidationRules, handleValidationErrors, createHandler(ImageController, 'updateStoreImage'))
 /**
@@ -239,13 +239,13 @@ imageRouter.put(`/:imageId`, authenticateUser, imageUpdateValidationRules, handl
  *       '400':
  *         $ref: '#/components/responses/ValidationError'
  *       '401':
- *         description: 認証されていません。
+ *         $ref: '#/components/responses/Unauthorized'
  *       '403':
- *         description: 権限がありません。
+ *         $ref: '#/components/responses/Forbidden'
  *       '404':
  *         $ref: '#/components/responses/ImageNotFound'
  *       '503':
- *         description: 認証サービスに接続できません。時間をおいて再試行してください。
+ *         $ref: '#/components/responses/AuthServiceUnavailable'
  */
 imageRouter.delete(`/:imageId`, authenticateUser, imageGetValidationRules, handleValidationErrors, createHandler(ImageController, 'deleteStoreImage'))
 export { imageRouter }
