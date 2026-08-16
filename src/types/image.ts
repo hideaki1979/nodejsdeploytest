@@ -123,12 +123,6 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  *           type: boolean
  *           description: 削除に成功したかどうか
  *           example: true
- *     ImageUpdate:
- *       type: object
- *       properties:
- *         image_url:
- *           type: string
- *           description: 画像の新しいURL
  *     ImageToppingSelection:
  *       type: object
  *       description: 画像に紐づけるトッピングコールの選択内容
@@ -226,11 +220,6 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  *                  error:
  *                    type: string
  *                    example: 画像が見つかりません
- *   securitySchemes:
- *     bearerAuth:
- *       type: http
- *       scheme: bearer
- *       bearerFormat: JWT
  */
 
 // StoreImageUploadData インターフェースの追加
