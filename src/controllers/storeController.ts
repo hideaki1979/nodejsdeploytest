@@ -49,7 +49,8 @@ export class StoreController {
         const storeId = Number(req.params.id)
         const result = await this.storeService.updateStore(storeId, req.body)
 
-        res.status(201).json({
+        // 既存店舗の更新でありリソースの新規作成ではないため 200 を返す
+        res.status(200).json({
             data: result,
             success: true,
             message: '店舗情報が正常に更新されました'
@@ -177,7 +178,7 @@ export class StoreController {
      * @remarks
      * 閉店処理は、店舗の情報を更新することで実現する。
      *店舗IDと店舗名を指定して、店舗情報を更新する。
-     *成功すると、201 Createdを返す。
+     *成功すると、200 OKを返す。
      *失敗すると、500 Internal Server Errorを返す。
      */
     async storeClose(req: Request, res: Response): Promise<void> {
@@ -185,7 +186,8 @@ export class StoreController {
         const storeName = req.body.storeName
         const result = await this.storeService.storeClose(storeId, storeName)
 
-        res.status(201).json({
+        // 既存店舗の状態更新でありリソースの新規作成ではないため 200 を返す
+        res.status(200).json({
             success: true,
             data: result,
             message: "閉店処理が正常に終了しました"
