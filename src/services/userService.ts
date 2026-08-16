@@ -18,7 +18,11 @@ export class UserService {
                 id: data.uid,
                 display_name: data.displayName,
                 email: data.email,
-                provider: data.authProvider
+                provider: data.authProvider,
+                // bio はバリデーションを通過し User モデルにもカラムがあるため保存する。
+                // 登録対象から漏れていた間は、リクエストが 201 で成功するのに
+                // 値だけ黙って捨てられていた
+                bio: data.bio
             }
             const user = await this.prisma.user.create({
                 data: userData

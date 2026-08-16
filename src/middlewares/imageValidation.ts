@@ -32,7 +32,16 @@ const commonImageValidationRules = [
     body('topping_selections.*.call_option_id')
         .if(body('topping_selections').exists())
         .notEmpty().withMessage('コールオプションIDは必須です')
-        .isInt().withMessage('コールオプションIDは整数で指定してください')
+        .isInt().withMessage('コールオプションIDは整数で指定してください'),
+
+    // 検証が無いと BigInt(undefined) が TypeError となり、入力ミスが 500 として返る。
+    // さらに Storage へのアップロードはこの変換より前に完了しているため、
+    // アップロード → 補償処理による削除、という無駄な往復まで発生する。
+    // 他の2項目と同様にここで 400 に倒す
+    body('topping_selections.*.store_topping_call_id')
+        .if(body('topping_selections').exists())
+        .notEmpty().withMessage('店舗別トッピングコールIDは必須です')
+        .isInt().withMessage('店舗別トッピングコールIDは整数で指定してください')
 
 ]
 

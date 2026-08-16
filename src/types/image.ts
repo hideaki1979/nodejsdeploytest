@@ -139,10 +139,7 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  *           description: コールオプションID
  *         store_topping_call_id:
  *           type: integer
- *           description: |
- *             店舗別トッピングコールID。
- *             バリデーションの検証対象には入っていないが、
- *             登録・更新時に BigInt へ変換して保存するため未指定にはできない。
+ *           description: 店舗別トッピングコールID
  *     ImageUploadInput:
  *       type: object
  *       description: |

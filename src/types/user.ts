@@ -72,9 +72,8 @@
  *           type: string
  *           maxLength: 500
  *           description: |
- *             プロフィール（前後の空白除去とHTMLエスケープを行う）。
- *             バリデーションは通過するが、userService.createUser の登録対象に
- *             含まれていないため、現状この値は保存されない。
+ *             プロフィール（前後の空白除去とHTMLエスケープを行って保存される）。
+ *             ユーザー情報の更新APIが無いため、設定できるのは新規登録時のみ。
  *           example: 'プロフィール情報です'
  */
 export interface User {
