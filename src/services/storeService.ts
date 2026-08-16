@@ -1,5 +1,17 @@
-import { Prisma, PrismaClient, StoreToppingCall } from "../generated/prisma/client";
-import { GeocodingResult, StoreData, StoreToppingCallFilter } from "../types/store";
+import { Prisma, PrismaClient } from "../generated/prisma/client";
+import {
+    GeocodingResult,
+    mapWriteSelect,
+    StoreCloseServiceResult,
+    storeCloseSelect,
+    StoreCreateServiceResult,
+    StoreData,
+    StoreToppingCallFilter,
+    StoreToppingCallWriteResult,
+    storeToppingCallWriteSelect,
+    StoreUpdateServiceResult,
+    storeWriteSelect
+} from "../types/store";
 import { GeocodingService } from "./geocodingService"
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "../types/toppingCallOption";
 import { AppError } from "../middlewares/errorMiddleware";
@@ -22,9 +34,9 @@ export class StoreService {
    * 店舗情報とマップ情報を同時に登録する
    * トランザクションを使用してテーブルの整合性を担保する
    * @param data フロントエンドから受け取ったデータ
-   * @returns 作成された店舗とマップ情報
+   * @returns 作成された店舗とマップ情報（返却フィールドは select で明示的に限定）
    */
-    async createStore(data: StoreData) {
+    async createStore(data: StoreData): Promise<StoreCreateServiceResult> {
         const geocodingResult: GeocodingResult
             = await this.geoCodingService.geocodeAddress(data.address)
         // トランザクション開始
@@ -46,7 +58,8 @@ export class StoreService {
 
             // 店舗情報登録
             const store = await tx.store.create({
-                data: storeData
+                data: storeData,
+                select: storeWriteSelect
             })
 
             // map情報登録
@@ -55,11 +68,12 @@ export class StoreService {
                     store_id: store.id,
                     latitude: geocodingResult.latitude,
                     longitude: geocodingResult.longitude
-                }
+                },
+                select: mapWriteSelect
             })
 
             // 店舗別トッピングコール情報の登録
-            let storeToppingCalls: StoreToppingCall[] = [];
+            let storeToppingCalls: StoreToppingCallWriteResult[] = [];
 
             if (data.topping_calls?.length && data.topping_calls?.length > 0) {
                 // map関数でPromiseの配列を作成し、Promise.allで並列実行
@@ -72,7 +86,8 @@ export class StoreService {
                                 call_option_id: toppingCall.call_option_id,
                                 call_timing: toppingCall.call_timing,
                                 noodle_type_id: toppingCall.noodle_type_id
-                            }
+                            },
+                            select: storeToppingCallWriteSelect
                         })
                     )
                 )
@@ -86,9 +101,9 @@ export class StoreService {
      * トランザクションを使用して、店舗情報とマップ情報、店舗別トッピングコール情報を同時に更新する
      * @param storeId 店舗ID
      * @param data フロントエンドから受け取ったデータ
-     * @returns 更新された店舗、map情報、店舗別トッピングコール情報
+     * @returns 更新された店舗、map情報、店舗別トッピングコール情報（返却フィールドは select で明示的に限定）
      */
-    async updateStore(storeId: number, data: StoreData) {
+    async updateStore(storeId: number, data: StoreData): Promise<StoreUpdateServiceResult> {
         const geoResult = await this.geoCodingService.geocodeAddress(data.address)
 
         // トランザクション開始
@@ -111,7 +126,8 @@ export class StoreService {
             // 店舗情報更新
             const store = await tx.store.update({
                 where: { id: storeId },
-                data: storeData
+                data: storeData,
+                select: storeWriteSelect
             })
 
             // map情報更新
@@ -120,7 +136,8 @@ export class StoreService {
                 data: {
                     latitude: geoResult.latitude,
                     longitude: geoResult.longitude
-                }
+                },
+                select: mapWriteSelect
             })
 
             // 店舗別トッピングコール情報の更新（削除→再登録）
@@ -130,7 +147,7 @@ export class StoreService {
             })
 
             // 2. 新しいトッピングコール情報を登録
-            let storeToppingCalls: StoreToppingCall[] = []
+            let storeToppingCalls: StoreToppingCallWriteResult[] = []
 
             if (data.topping_calls && data.topping_calls.length > 0) {
                 // map関数でPromiseの配列を作成し、Promise.allで並列実行
@@ -143,7 +160,8 @@ export class StoreService {
                                 call_option_id: toppingCall.call_option_id,
                                 call_timing: toppingCall.call_timing,
                                 noodle_type_id: toppingCall.noodle_type_id
-                            }
+                            },
+                            select: storeToppingCallWriteSelect
                         })
                     )
                 )
@@ -462,9 +480,9 @@ export class StoreService {
      * 店舗名に「【閉店】」を付与し、is_closeフィールドをtrueにする
      * @param storeId 店舗ID
      * @param storeName 店舗名
-     * @returns 閉店させた店舗情報
+     * @returns 閉店させた店舗情報（返却フィールドは select で明示的に限定）
      */
-    async storeClose(storeId: number, storeName: string) {
+    async storeClose(storeId: number, storeName: string): Promise<StoreCloseServiceResult> {
         const closeStoreName = `【閉店】${storeName}`
         const store = await this.prisma.store.update({
             where: {
@@ -473,7 +491,8 @@ export class StoreService {
             data: {
                 store_name: closeStoreName,
                 is_close: true
-            }
+            },
+            select: storeCloseSelect
         })
         return store
 

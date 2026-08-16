@@ -1,6 +1,6 @@
 import { FormattedToppingOptionIds, FormattedToppingOptionNames } from "./toppingCallOption";
 import { ValidationError } from "express-validator";
-import { Store, Map, StoreToppingCall, Prisma } from "../generated/prisma/client";
+import { Prisma } from "../generated/prisma/client";
 
 /**
  * @swagger
@@ -58,6 +58,90 @@ import { Store, Map, StoreToppingCall, Prisma } from "../generated/prisma/client
  *         is_close:
  *           type: boolean
  *           description: 閉店フラグ
+ *     StoreWriteResult:
+ *       type: object
+ *       description: 店舗登録・更新APIが返す店舗情報（返却フィールドを明示的に限定している）
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: 店舗ID（BigIntのため文字列で返却）
+ *         store_name:
+ *           type: string
+ *           description: 店舗名
+ *         branch_name:
+ *           type: string
+ *           nullable: true
+ *           description: 支店名
+ *         address:
+ *           type: string
+ *           description: 住所
+ *         is_close:
+ *           type: boolean
+ *           description: 閉店フラグ
+ *     StoreCloseResult:
+ *       type: object
+ *       description: 閉店APIが返す店舗情報（返却フィールドを明示的に限定している）
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: 店舗ID（BigIntのため文字列で返却）
+ *         store_name:
+ *           type: string
+ *           description: 閉店表記を付与した店舗名
+ *         is_close:
+ *           type: boolean
+ *           description: 閉店フラグ
+ *     MapWriteResult:
+ *       type: object
+ *       description: 店舗登録・更新APIが返すマップ情報（返却フィールドを明示的に限定している）
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: マップID（BigIntのため文字列で返却）
+ *         store_id:
+ *           type: string
+ *           description: 店舗ID（BigIntのため文字列で返却）
+ *         latitude:
+ *           type: string
+ *           description: 緯度（Decimalのため文字列で返却）
+ *         longitude:
+ *           type: string
+ *           description: 経度（Decimalのため文字列で返却）
+ *     StoreToppingCallWriteResult:
+ *       type: object
+ *       description: 店舗登録・更新APIが返す店舗別トッピングコール情報（返却フィールドを明示的に限定している）
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: 店舗別トッピングコールID（BigIntのため文字列で返却）
+ *         store_id:
+ *           type: string
+ *           description: 店舗ID（BigIntのため文字列で返却）
+ *         topping_id:
+ *           type: string
+ *           description: トッピングID（BigIntのため文字列で返却）
+ *         call_option_id:
+ *           type: string
+ *           description: コールオプションID（BigIntのため文字列で返却）
+ *         call_timing:
+ *           type: string
+ *           enum: [pre_call, post_call]
+ *           description: コールタイミング
+ *         noodle_type_id:
+ *           type: string
+ *           description: 麺種別ID（BigIntのため文字列で返却）
+ *     StoreWriteResponseData:
+ *       type: object
+ *       description: 店舗登録・更新APIの data 部
+ *       properties:
+ *         store:
+ *           $ref: '#/components/schemas/StoreWriteResult'
+ *         map:
+ *           $ref: '#/components/schemas/MapWriteResult'
+ *         storeToppingCalls:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/StoreToppingCallWriteResult'
  *   responses:
  *      StoreNotFound:
  *          description: 指定された店舗が見つかりません。
@@ -161,21 +245,68 @@ export interface FormattedToppingOptionNameStoreData {
 }
 
 // =============================================================================
+// 書き込み系エンドポイントのレスポンス用 select 定義
+//
+// Prismaの行をそのまま返すと、テーブルにカラムを追加した時点で
+// サービス層・コントローラを一切変更していないのにAPIの公開契約が変わってしまう。
+// 返却するフィールドをここで明示し、スキーマ変更が公開契約へ波及しないようにする。
+// 読み取り系（getMapAll / getStoresAll など）と同じ方針を書き込み系にも適用する。
+// =============================================================================
+
+// storeService.createStore / updateStore が返す店舗フィールド
+export const storeWriteSelect = {
+    id: true,
+    store_name: true,
+    branch_name: true,
+    address: true,
+    is_close: true
+} satisfies Prisma.StoreSelect;
+
+// storeService.createStore / updateStore が返すマップフィールド
+export const mapWriteSelect = {
+    id: true,
+    store_id: true,
+    latitude: true,
+    longitude: true
+} satisfies Prisma.MapSelect;
+
+// storeService.createStore / updateStore が返す店舗別トッピングコールのフィールド
+export const storeToppingCallWriteSelect = {
+    id: true,
+    store_id: true,
+    topping_id: true,
+    call_option_id: true,
+    call_timing: true,
+    noodle_type_id: true
+} satisfies Prisma.StoreToppingCallSelect;
+
+// storeService.storeClose が返す店舗フィールド
+export const storeCloseSelect = {
+    id: true,
+    store_name: true,
+    is_close: true
+} satisfies Prisma.StoreSelect;
+
+// =============================================================================
 // Service Return Types (Prismaの型を活用)
 // =============================================================================
 
+export type StoreWriteResult = Prisma.StoreGetPayload<{ select: typeof storeWriteSelect }>;
+export type MapWriteResult = Prisma.MapGetPayload<{ select: typeof mapWriteSelect }>;
+export type StoreToppingCallWriteResult = Prisma.StoreToppingCallGetPayload<{ select: typeof storeToppingCallWriteSelect }>;
+
 // storeService.createStore の戻り値型
 export interface StoreCreateServiceResult {
-    store: Store;
-    map: Map;
-    storeToppingCalls: StoreToppingCall[];
+    store: StoreWriteResult;
+    map: MapWriteResult;
+    storeToppingCalls: StoreToppingCallWriteResult[];
 }
 
 // storeService.updateStore の戻り値型
 export interface StoreUpdateServiceResult {
-    store: Store;
-    map: Map;
-    storeToppingCalls: StoreToppingCall[];
+    store: StoreWriteResult;
+    map: MapWriteResult;
+    storeToppingCalls: StoreToppingCallWriteResult[];
 }
 
 // storeService.getStoreById の戻り値型
@@ -223,7 +354,7 @@ export interface StoreToppingCallsServiceResult {
 }
 
 // storeService.storeClose の戻り値型
-export type StoreCloseServiceResult = Store;
+export type StoreCloseServiceResult = Prisma.StoreGetPayload<{ select: typeof storeCloseSelect }>;
 
 // =============================================================================
 // Controller Response Types (APIレスポンス用)

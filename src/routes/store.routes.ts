@@ -34,8 +34,11 @@ const storeRouter = Router()
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 店舗情報が正常に登録されました。
  *                 data:
- *                   $ref: '#/components/schemas/Store'
+ *                   $ref: '#/components/schemas/StoreWriteResponseData'
  *       '400':
  *         description: リクエストが無効です。
  *       '401':
@@ -140,8 +143,11 @@ storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 店舗情報が正常に更新されました
  *                 data:
- *                   $ref: '#/components/schemas/Store'
+ *                   $ref: '#/components/schemas/StoreWriteResponseData'
  *       '400':
  *         description: リクエストが無効です。
  *       '401':
@@ -194,6 +200,11 @@ storeRouter.put('/:id', authenticateUser, storeValidationRules, handleValidation
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 閉店処理が正常に終了しました
+ *                 data:
+ *                   $ref: '#/components/schemas/StoreCloseResult'
  *       '400':
  *         description: リクエストが無効です。
  *       '401':
