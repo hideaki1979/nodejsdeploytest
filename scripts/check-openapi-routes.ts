@@ -10,8 +10,23 @@
 import { collectExpressRoutes, type ExpressRoute } from './collectExpressRoutes'
 import { swaggerSpec } from '../src/config/swagger'
 
-/** OpenAPI の Path Item のうち、オペレーションではないキー。 */
-const NON_OPERATION_KEYS = new Set(['$ref', 'summary', 'description', 'servers', 'parameters'])
+/**
+ * OpenAPI 3.0 の Path Item Object がオペレーションとして定義しているキー。
+ *
+ * 除外キーの一覧（summary / parameters など）を持つ方式では、
+ * Path Item に許された `x-` 拡張をオペレーションとして誤って拾ってしまう。
+ * 仕様上メソッドは閉じた集合なので、許可する側を列挙する。
+ */
+const OPENAPI_OPERATION_METHODS = new Set([
+    'get',
+    'put',
+    'post',
+    'delete',
+    'options',
+    'head',
+    'patch',
+    'trace',
+])
 
 interface Operation {
     method: string
@@ -36,14 +51,31 @@ function findUnconvertiblePaths(routes: ExpressRoute[]): ExpressRoute[] {
     return routes.filter((route) => /[*(){}]|:[^A-Za-z0-9_]/.test(route.path))
 }
 
+/**
+ * OpenAPI のオペレーションとして表現できないメソッドで登録されたルートを検出する。
+ *
+ * router.all() の 'all' や、router パッケージが持つ CONNECT / PROPFIND などには
+ * Path Item Object 側に対応するキーが無く、そもそもドキュメント化する手段がない
+ * （redocly も Path Item の不正なキーとしてエラーにする）。
+ *
+ * これらを「未ドキュメント」として報告すると、書きようのない修正を促すことになる。
+ * また all を8メソッドへ展開すると、405 応答やプリフライト用の catch-all に対して
+ * 8件の未ドキュメントを並べることになり、こちらも実態と合わない。
+ * どう扱うべきかは登録の意図によるため、機械的に読み替えず個別の判断を促す。
+ */
+function findUnsupportedMethods(routes: ExpressRoute[]): ExpressRoute[] {
+    return routes.filter((route) => !OPENAPI_OPERATION_METHODS.has(route.method))
+}
+
 function collectSpecOperations(): Operation[] {
     const paths = (swaggerSpec as { paths?: Record<string, Record<string, unknown>> }).paths ?? {}
     const operations: Operation[] = []
 
     for (const [specPath, pathItem] of Object.entries(paths)) {
         for (const key of Object.keys(pathItem)) {
-            if (NON_OPERATION_KEYS.has(key)) continue
-            operations.push({ method: key.toLowerCase(), path: specPath })
+            const method = key.toLowerCase()
+            if (!OPENAPI_OPERATION_METHODS.has(method)) continue
+            operations.push({ method, path: specPath })
         }
     }
     return operations
@@ -57,11 +89,19 @@ function printSection(title: string, operations: string[]): void {
 function main(): void {
     const expressRoutes = collectExpressRoutes()
 
-    const unconvertible = findUnconvertiblePaths(expressRoutes)
-    if (unconvertible.length > 0) {
-        printSection(
-            'OpenAPI のパス表記へ変換できないルート（このスクリプトの対応が必要です）',
-            unconvertible.map(formatOperation),
+    // 突き合わせの前に、そもそも OpenAPI で表現できない登録を弾く。
+    // 無理に読み替えると、直しようのない「未ドキュメント」として報告してしまう。
+    const unsupported = [
+        { title: 'OpenAPI のパス表記へ変換できないルート', routes: findUnconvertiblePaths(expressRoutes) },
+        { title: 'OpenAPI で表現できないメソッドのルート', routes: findUnsupportedMethods(expressRoutes) },
+    ].filter((group) => group.routes.length > 0)
+
+    if (unsupported.length > 0) {
+        for (const group of unsupported) {
+            printSection(group.title, group.routes.map(formatOperation))
+        }
+        console.error(
+            '\n突き合わせを中止しました。ルート定義を見直すか、このスクリプトを対応させてください。',
         )
         process.exitCode = 1
         return
