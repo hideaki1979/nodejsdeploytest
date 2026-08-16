@@ -37,7 +37,9 @@ toppingRouter.get('/', createHandler(ToppingController, 'getToppingAll'))
  *     tags:
  *       - Toppings
  *     summary: フォーマット済みトッピングコールオプション取得
- *     description: フロントエンド表示用に、カテゴリごとにグループ化され、各トッピングに関連するコールオプションが含まれた情報を取得します。
+ *     description: |
+ *       フロントエンド表示用に、各トッピングとそのトッピングカテゴリに一致するコールオプションを取得します。
+ *       data は配列ではなく、トッピングIDをキーとしたオブジェクトで返ります。
  *     responses:
  *       '200':
  *         description: 正常にフォーマット済みトッピングコールオプションを取得しました。
@@ -50,14 +52,12 @@ toppingRouter.get('/', createHandler(ToppingController, 'getToppingAll'))
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/FormattedTopping'
+ *                   $ref: '#/components/schemas/FormattedToppingCallOptionMap'
  */
 toppingRouter.get(`/calloptions/formatted`, createHandler(ToppingController, 'getFormattedToppingCollOption'))
 /**
  * @swagger
- * /call-options:
+ * /calloptions:
  *   get:
  *     tags:
  *       - Toppings
