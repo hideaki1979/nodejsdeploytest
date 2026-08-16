@@ -9,15 +9,15 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  *       type: object
  *       description: |
  *         店舗画像一覧取得APIが返す画像情報（一覧表示用）。
- *         個別取得APIの ImageEditDetail とは ID の型もトッピング項目名も異なる点に注意。
- *         こちらは ID を Number() で数値化し、トッピングを表示名つきの topping_calls で返す。
+ *         個別取得APIの ImageEditDetail とはトッピング項目が異なり、
+ *         こちらは画面表示用に表示名つきの topping_calls を返す。
  *       properties:
  *         id:
- *           type: integer
- *           description: 画像ID（Number変換済みのため数値）
+ *           type: string
+ *           description: 画像ID（BigIntのため文字列で返却）
  *         store_id:
- *           type: integer
- *           description: 関連する店舗のID（Number変換済みのため数値）
+ *           type: string
+ *           description: 関連する店舗のID（BigIntのため文字列で返却）
  *         user_id:
  *           type: string
  *           description: 投稿したユーザーのID
@@ -37,14 +37,14 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  *             type: object
  *             properties:
  *               topping_id:
- *                 type: integer
- *                 description: トッピングID（Number変換済みのため数値）
+ *                 type: string
+ *                 description: トッピングID（BigIntのため文字列で返却）
  *               topping_name:
  *                 type: string
  *                 description: トッピング名
  *               call_option_id:
- *                 type: integer
- *                 description: コールオプションID（Number変換済みのため数値）
+ *                 type: string
+ *                 description: コールオプションID（BigIntのため文字列で返却）
  *               call_option_name:
  *                 type: string
  *                 description: コールオプション名
@@ -52,16 +52,16 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  *       type: object
  *       description: |
  *         店舗画像の個別取得APIが返す画像情報（更新画面用）。
- *         一覧取得APIの ImageListItem とは ID の型もトッピング項目名も異なる点に注意。
- *         こちらは ID を String() で文字列化し、更新リクエストにそのまま渡せる
- *         topping_selections（store_topping_call_id つき）で返す。
+ *         一覧取得APIの ImageListItem とはトッピング項目が異なり、
+ *         こちらは更新リクエストにそのまま渡せる
+ *         topping_selections（store_topping_call_id つき）を返す。
  *       properties:
  *         id:
  *           type: string
- *           description: 画像ID（String変換済みのため文字列）
+ *           description: 画像ID（BigIntのため文字列で返却）
  *         store_id:
  *           type: string
- *           description: 関連する店舗のID（String変換済みのため文字列）
+ *           description: 関連する店舗のID（BigIntのため文字列で返却）
  *         user_id:
  *           type: string
  *           description: 投稿したユーザーのID
@@ -82,13 +82,13 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  *             properties:
  *               topping_id:
  *                 type: string
- *                 description: トッピングID（String変換済みのため文字列）
+ *                 description: トッピングID（BigIntのため文字列で返却）
  *               call_option_id:
  *                 type: string
- *                 description: コールオプションID（String変換済みのため文字列）
+ *                 description: コールオプションID（BigIntのため文字列で返却）
  *               store_topping_call_id:
  *                 type: string
- *                 description: 店舗別トッピングコールID（String変換済みのため文字列）
+ *                 description: 店舗別トッピングコールID（BigIntのため文字列で返却）
  *     ImageWriteResult:
  *       type: object
  *       description: 画像アップロードAPIの data 部
