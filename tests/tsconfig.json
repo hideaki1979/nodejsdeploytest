@@ -1,0 +1,16 @@
+// テスト用の TypeScript 設定。ts-jest とエディタの両方がこれを使う。
+//
+// ルートの tsconfig.json はビルド専用で include が src 配下のみ、types も
+// node / express に絞ってある。tests をそこに含めるとビルド成果物に混ざるため含められない。
+// 一方、どの tsconfig にも属さないファイルをエディタで開くと TypeScript は推論プロジェクトへ
+// フォールバックし、jest のグローバル（describe / expect）どころか process すら解決できなくなる。
+// tests/ 直下に置くことで、エディタが最も近い tsconfig.json としてこれを見つける。
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true,
+    "types": ["node", "express", "jest"]
+  },
+  "include": ["**/*"]
+}

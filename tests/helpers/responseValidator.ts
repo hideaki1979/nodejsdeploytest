@@ -1,4 +1,4 @@
-import Ajv, { type ValidateFunction } from 'ajv'
+import Ajv, { type ErrorObject, type ValidateFunction } from 'ajv'
 import addFormats from 'ajv-formats'
 import { swaggerSpec } from '../../src/config/swagger'
 
@@ -19,7 +19,7 @@ import { swaggerSpec } from '../../src/config/swagger'
 /**
  * OpenAPI 3.0 のスキーマを JSON Schema として扱える形へ直す。
  *
- * - nullable: true → 型ユニオン（JSON Schema に nullable は無い）
+ * - nullable: true → null を許容する形へ
  * - example       → Ajv が解釈できない上、検証には不要なため落とす
  */
 function toJsonSchema(node: unknown): unknown {
@@ -34,10 +34,17 @@ function toJsonSchema(node: unknown): unknown {
         converted[key] = toJsonSchema(value)
     }
 
-    if (source.nullable === true && typeof source.type === 'string') {
+    if (source.nullable !== true) return converted
+
+    // `type: 'string'` のような素の型指定なら型ユニオンで済む
+    if (typeof source.type === 'string') {
         converted.type = [source.type, 'null']
+        return converted
     }
-    return converted
+
+    // $ref / oneOf / anyOf などを持つノードは型ユニオンにできない。
+    // そのまま落とすと null が弾かれて誤検知になるため、null 許容を外側に足す。
+    return { anyOf: [converted, { type: 'null' }] }
 }
 
 const ajv = new Ajv({ strict: false, allErrors: true })
@@ -45,8 +52,16 @@ addFormats(ajv)
 // spec 全体を1つのスキーマとして登録し、$ref: '#/components/schemas/...' を解決できるようにする
 ajv.addSchema(toJsonSchema(swaggerSpec) as object, 'openapi')
 
-function escapeJsonPointer(segment: string): string {
-    return segment.replace(/~/g, '~0').replace(/\//g, '~1')
+/**
+ * JSON Pointer のセグメントを URI フラグメントとして安全な形にする。
+ *
+ * `~` `/` のエスケープ（RFC 6901）に加えて、パステンプレートに含まれる `{` `}` を
+ * パーセントエンコードする（RFC 3986 のフラグメントに使えない文字のため）。
+ * エンコードせずとも現状の Ajv は解決できてしまうが、仕様上は不正な参照であり
+ * 依存の更新で解決に失敗しうる。
+ */
+function encodePointerSegment(segment: string): string {
+    return encodeURIComponent(segment.replace(/~/g, '~0').replace(/\//g, '~1'))
 }
 
 export interface OperationRef {
@@ -60,7 +75,7 @@ export interface OperationRef {
 function getResponseObject(operation: OperationRef): Record<string, unknown> {
     const paths = (swaggerSpec as { paths?: Record<string, Record<string, unknown>> }).paths ?? {}
     const pathItem = paths[operation.path] as Record<string, unknown> | undefined
-    const method = (pathItem?.[operation.method.toLowerCase()] ?? undefined) as
+    const method = pathItem?.[operation.method.toLowerCase()] as
         | { responses?: Record<string, Record<string, unknown>> }
         | undefined
     const response = method?.responses?.[String(operation.status)]
@@ -78,15 +93,26 @@ function getValidator(operation: OperationRef, contentType: string): ValidateFun
         [
             'openapi#',
             'paths',
-            escapeJsonPointer(operation.path),
+            encodePointerSegment(operation.path),
             operation.method.toLowerCase(),
             'responses',
             String(operation.status),
             'content',
-            escapeJsonPointer(contentType),
+            encodePointerSegment(contentType),
             'schema',
         ].join('/'),
     )
+}
+
+/** ajv のエラーを、原因が分かる1行にする */
+function describeError(error: ErrorObject): string {
+    const at = error.instancePath === '' ? '(ルート)' : error.instancePath
+    // params には missingProperty / allowedValues など「何が期待値だったか」が入る
+    const params = Object.entries(error.params ?? {})
+        .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+        .join(', ')
+
+    return params === '' ? `${at} ${error.message}` : `${at} ${error.message} (${params})`
 }
 
 /**
@@ -102,7 +128,7 @@ export function findResponseViolations(
     actualContentType: string | undefined,
 ): string[] {
     const response = getResponseObject(operation)
-    const content = response.content as Record<string, unknown> | undefined
+    const content = response.content as Record<string, { schema?: unknown }> | undefined
 
     // spec が本文を定義していないレスポンス（204 など）
     if (!content) {
@@ -121,12 +147,19 @@ export function findResponseViolations(
         ]
     }
 
-    const validate = getValidator(operation, actualContentType)
-    // content に載っているがスキーマの記載が無いケースは、検証対象なしとして扱う
-    if (!validate || validate(body)) return []
+    // spec にスキーマの記載が無ければ検証対象なし
+    if (content[actualContentType].schema === undefined) return []
 
-    return (validate.errors ?? []).map((error) => {
-        const at = error.instancePath === '' ? '(ルート)' : error.instancePath
-        return `${at} ${error.message}`
-    })
+    const validate = getValidator(operation, actualContentType)
+    if (!validate) {
+        // spec にスキーマはあるのに Ajv が引けない＝参照の組み立てが壊れている。
+        // 「違反なし」で返すと検証したつもりの素通りになるため、明示的に落とす。
+        throw new Error(
+            `spec のスキーマを解決できませんでした: ${operation.method.toUpperCase()} ${operation.path} ` +
+            `${operation.status} ${actualContentType}`,
+        )
+    }
+
+    if (validate(body)) return []
+    return (validate.errors ?? []).map(describeError)
 }

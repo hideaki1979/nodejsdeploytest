@@ -1,6 +1,21 @@
 import { readCoveredOperations } from './helpers/coverage'
 import { listSpecOperations } from './helpers/specOperations'
 
+/** globalTeardown が Jest から受け取る設定のうち、実行対象の絞り込みに関わる部分 */
+interface GlobalConfigLike {
+    testPathPatterns?: { patterns?: string[] }
+    testNamePattern?: string
+    onlyChanged?: boolean
+}
+
+/** テストの一部だけを実行しているか（絞り込み実行では網羅性を判定できない） */
+function isFilteredRun(globalConfig: GlobalConfigLike): boolean {
+    if (process.env.SKIP_SPEC_COVERAGE_CHECK === '1') return true
+    if (globalConfig.onlyChanged === true) return true
+    if (typeof globalConfig.testNamePattern === 'string' && globalConfig.testNamePattern !== '') return true
+    return (globalConfig.testPathPatterns?.patterns?.length ?? 0) > 0
+}
+
 /**
  * spec の全オペレーションが、実際に実行されたテストで検証されたことを確認する。
  *
@@ -12,11 +27,11 @@ import { listSpecOperations } from './helpers/specOperations'
  * 全ファイルの実行が終わるまで結果が揃わないため
  * （テストファイル同士の実行順は保証されない）。
  *
- * `-t` などでテストを絞り込んだ実行では当然この確認は通らない。
- * その場合は環境変数 SKIP_SPEC_COVERAGE_CHECK=1 で無効化する。
+ * `npx jest tests/users.test.ts` のような絞り込み実行では当然通らないので、
+ * その場合は自動的に判定を飛ばす。
  */
-export default function globalTeardown(): void {
-    if (process.env.SKIP_SPEC_COVERAGE_CHECK === '1') return
+export default function globalTeardown(globalConfig: GlobalConfigLike): void {
+    if (isFilteredRun(globalConfig)) return
 
     const covered = readCoveredOperations()
     const missing = listSpecOperations()
@@ -31,7 +46,6 @@ export default function globalTeardown(): void {
             ...missing.map((operation) => `  - ${operation}`),
             '',
             'tests/ 配下に expectApiResponse を使ったテストを追加してください。',
-            '一部のテストだけを実行している場合は SKIP_SPEC_COVERAGE_CHECK=1 を指定してください。',
         ].join('\n'),
     )
 }

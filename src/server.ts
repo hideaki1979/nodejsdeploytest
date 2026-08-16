@@ -1,15 +1,6 @@
-import dotenv from 'dotenv'
-import path from 'path'
-
-//.envファイルを読み込む
-// この処理は他のどのimportよりも先に実行される必要がある
-// （config/config.ts は import された時点で環境変数を検証するため）
-//
-// quiet: true は必須。dotenv 17 から既定で
-// 「◇ injected env (N) from .env // tip: ...」というバナーを標準出力に出すようになった。
-// 本アプリは pino で構造化ログ(JSON)を出力するため、
-// 非JSONの行が混ざるとログ収集側のパースが壊れる。
-dotenv.config({ path: path.resolve(__dirname, '../.env'), quiet: true })
+// .env の読み込み。config/config.ts が import 時に環境変数を検証するため、
+// 他のどの import よりも先に置くこと（詳細は loadEnv.ts のコメントを参照）。
+import './loadEnv'
 
 import 'reflect-metadata'
 // Firebase の初期化を起動時点で走らせ、認証情報の不備をリクエスト到達前に落とす

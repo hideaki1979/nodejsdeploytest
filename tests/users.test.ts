@@ -39,7 +39,13 @@ describe('Users', () => {
         await request(app)
             .post('/users')
             .set('Authorization', AUTH_HEADER)
-            .send({ email: 'test@example.com', displayName: 'テストユーザー', authProvider: 'google' })
+            .send({
+                email: 'test@example.com',
+                displayName: 'テストユーザー',
+                authProvider: 'google',
+                // 他人になりすまそうとするリクエスト。無視されなければならない
+                uid: 'spoofed-user-uid',
+            })
 
         // なりすまし防止のため、登録される id はトークン由来でなければならない
         expect(prisma.user.create).toHaveBeenCalledWith(

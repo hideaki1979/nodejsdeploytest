@@ -364,6 +364,7 @@ npx prisma migrate reset
 ```
 src/
 ├── server.ts                 # アプリケーションエントリーポイント（依存登録 → 組み立て → listen）
+├── loadEnv.ts                # .env の読み込み（config より先に実行される必要がある）
 ├── app.ts                    # createApp()：Expressアプリの組み立て（起動はしない）
 ├── di.container.ts           # DIコンテナへの本番用依存の登録
 ├── config/                   # 設定ファイル
@@ -411,6 +412,7 @@ src/
     └── setupTriggers.ts    # データベーストリガー設定
 
 scripts/                     # 開発・CI 用スクリプト（アプリ本体には含まれない）
+├── tsconfig.json            # エディタ用の型設定
 ├── generate-openapi.ts      # swagger-jsdoc の spec を openapi.json へ出力
 ├── collectExpressRoutes.ts  # Express の実ルート一覧を収集
 └── check-openapi-routes.ts  # spec と実ルートの突き合わせ
@@ -421,10 +423,15 @@ tests/                       # 契約テスト（DB・Firebaseには接続しな
 │   ├── prismaMock.ts       # PrismaClient のモック
 │   ├── responseValidator.ts # 実レスポンスを spec のスキーマで検証
 │   ├── assert.ts           # expectApiResponse などのアサーション
-│   └── coverage.ts         # 実行されたオペレーションの記録
+│   ├── coverage.ts         # 実行されたオペレーションの記録
+│   ├── specOperations.ts   # spec のオペレーション一覧
+│   ├── env.ts              # テスト用の環境変数（setupFiles で実行）
+│   └── auth.ts             # 認証ヘッダとテストユーザーID
 ├── mocks/                  # Firebase / logger の差し替え
 ├── fixtures/               # Prisma の行を模したテストデータ
+├── globalSetup.ts          # 前回の網羅性記録のクリア
 ├── globalTeardown.ts       # spec の全オペレーションが検証されたかの確認
+├── tsconfig.json           # テスト用の型設定（ts-jest とエディタが参照）
 └── *.test.ts               # リソース別のテスト
 ```
 
@@ -528,6 +535,6 @@ lint のルールセットは `redocly.yaml` で調整しています。
 
 エンドポイントを追加してテストを書き忘れると失敗します。網羅性は「実際に実行されたテスト」を
 根拠に判定するため（`tests/globalTeardown.ts`）、`it.skip` やコメントアウトでも検知されます。
-一部のテストだけを実行したい場合は `SKIP_SPEC_COVERAGE_CHECK=1 npm test` を使ってください。
+`npx jest tests/users.test.ts` のような絞り込み実行では自動的に判定を飛ばします。
 
 バリデーションと OpenAPI 定義を zod へ一本化し、乖離を構造的に防ぐ案は issue #83 で検討中です。

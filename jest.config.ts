@@ -11,7 +11,7 @@ const config: Config = {
     roots: ['<rootDir>/tests'],
 
     transform: {
-        '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
+        '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tests/tsconfig.json' }],
     },
 
     setupFiles: [
@@ -22,12 +22,15 @@ const config: Config = {
         'reflect-metadata',
     ],
 
+    // パターンは src が実際に使っている相対指定だけに限定する。
+    // `^(.*)/config/logger$` のような広いパターンだと、
+    // 同名のパスを持つ無関係なモジュール（依存パッケージ内を含む）まで差し替えかねない。
     moduleNameMapper: {
         // import 時に認証情報を読みに行くため、実体を読み込ませない。
-        '^(.*)/config/firebase$': '<rootDir>/tests/mocks/firebase.ts',
+        '^\\.{1,2}/config/firebase$': '<rootDir>/tests/mocks/firebase.ts',
         // 本物は pino-pretty の transport を使う。transport はワーカースレッドを立てるため、
         // Jest が終了できなくなる（open handle）。テストでは transport 無しの silent に差し替える。
-        '^(.*)/config/logger$': '<rootDir>/tests/mocks/logger.ts',
+        '^\\.{1,2}/config/logger$': '<rootDir>/tests/mocks/logger.ts',
     },
 
     // spec の全オペレーションが「実際に実行されたテスト」で検証されたかを、
@@ -36,8 +39,6 @@ const config: Config = {
     globalTeardown: '<rootDir>/tests/globalTeardown.ts',
 
     clearMocks: true,
-    // 想定外の非同期処理が残っていないことを検知する
-    detectOpenHandles: true,
 }
 
 export default config

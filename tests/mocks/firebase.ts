@@ -16,13 +16,20 @@ export const auth = {
     })),
 }
 
-/** imageService が Storage 上のファイルに対して呼ぶ操作の一式 */
+/**
+ * imageService が Storage 上のファイルに対して呼ぶ操作の一式。
+ *
+ * 呼び出しごとに新しいオブジェクトを返すと `bucket.file().save` を後から検証できないため、
+ * 単一のインスタンスを使い回す。ファイル名は file() の呼び出し引数から確認する。
+ */
+export const storageFile = {
+    save: jest.fn(async () => undefined),
+    makePublic: jest.fn(async () => undefined),
+    exists: jest.fn(async () => [true]),
+    delete: jest.fn(async () => undefined),
+}
+
 export const bucket = {
     name: 'test-bucket',
-    file: jest.fn(() => ({
-        save: jest.fn(async () => undefined),
-        makePublic: jest.fn(async () => undefined),
-        exists: jest.fn(async () => [true]),
-        delete: jest.fn(async () => undefined),
-    })),
+    file: jest.fn(() => storageFile),
 }

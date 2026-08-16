@@ -27,6 +27,16 @@ function createModelMock(): PrismaModelMock {
             if (!methods.has(property)) methods.set(property, jest.fn())
             return methods.get(property)
         },
+        /**
+         * 直接代入（prisma.store.findMany = jest.fn()）も効くようにする。
+         * set トラップが無いと空のターゲット側に書き込まれ、get は Map の方を返すため
+         * 代入が黙って無視される。
+         */
+        set(_target, property, value) {
+            if (typeof property !== 'string') return false
+            methods.set(property, value as jest.Mock)
+            return true
+        },
     })
 }
 
