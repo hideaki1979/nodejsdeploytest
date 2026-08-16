@@ -5,40 +5,124 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  * @swagger
  * components:
  *   schemas:
- *     Image:
+ *     ImageListItem:
  *       type: object
+ *       description: |
+ *         店舗画像一覧取得APIが返す画像情報（一覧表示用）。
+ *         個別取得APIの ImageEditDetail とは ID の型もトッピング項目名も異なる点に注意。
+ *         こちらは ID を Number() で数値化し、トッピングを表示名つきの topping_calls で返す。
  *       properties:
  *         id:
  *           type: integer
- *           description: 画像ID
- *         image_url:
- *           type: string
- *           description: 画像のURL
+ *           description: 画像ID（Number変換済みのため数値）
+ *         store_id:
+ *           type: integer
+ *           description: 関連する店舗のID（Number変換済みのため数値）
  *         user_id:
  *           type: string
  *           description: 投稿したユーザーのID
- *         store_id:
- *           type: integer
- *           description: 関連する店舗のID
  *         menu_type:
  *           type: integer
  *           description: メニュータイプ
  *         menu_name:
  *           type: string
  *           description: メニュー名
+ *         image_url:
+ *           type: string
+ *           description: 画像のURL
  *         topping_calls:
  *           type: array
+ *           description: 紐づくトッピングコール。1件も無い場合はフィールドごと返却されない。
  *           items:
  *             type: object
  *             properties:
  *               topping_id:
  *                 type: integer
+ *                 description: トッピングID（Number変換済みのため数値）
  *               topping_name:
  *                 type: string
+ *                 description: トッピング名
  *               call_option_id:
  *                 type: integer
+ *                 description: コールオプションID（Number変換済みのため数値）
  *               call_option_name:
  *                 type: string
+ *                 description: コールオプション名
+ *     ImageEditDetail:
+ *       type: object
+ *       description: |
+ *         店舗画像の個別取得APIが返す画像情報（更新画面用）。
+ *         一覧取得APIの ImageListItem とは ID の型もトッピング項目名も異なる点に注意。
+ *         こちらは ID を String() で文字列化し、更新リクエストにそのまま渡せる
+ *         topping_selections（store_topping_call_id つき）で返す。
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: 画像ID（String変換済みのため文字列）
+ *         store_id:
+ *           type: string
+ *           description: 関連する店舗のID（String変換済みのため文字列）
+ *         user_id:
+ *           type: string
+ *           description: 投稿したユーザーのID
+ *         menu_type:
+ *           type: integer
+ *           description: メニュータイプ
+ *         menu_name:
+ *           type: string
+ *           description: メニュー名
+ *         image_url:
+ *           type: string
+ *           description: 画像のURL
+ *         topping_selections:
+ *           type: array
+ *           description: 紐づくトッピングコール。1件も無い場合は空配列を返す。
+ *           items:
+ *             type: object
+ *             properties:
+ *               topping_id:
+ *                 type: string
+ *                 description: トッピングID（String変換済みのため文字列）
+ *               call_option_id:
+ *                 type: string
+ *                 description: コールオプションID（String変換済みのため文字列）
+ *               store_topping_call_id:
+ *                 type: string
+ *                 description: 店舗別トッピングコールID（String変換済みのため文字列）
+ *     ImageWriteResult:
+ *       type: object
+ *       description: 画像アップロードAPIの data 部
+ *       properties:
+ *         imageId:
+ *           type: string
+ *           description: 画像ID（BigIntのため文字列で返却）
+ *         imageUrl:
+ *           type: string
+ *           description: アップロードした画像の公開URL
+ *     ImageUpdateResult:
+ *       type: object
+ *       description: 画像更新APIの data 部
+ *       properties:
+ *         imageId:
+ *           type: string
+ *           description: 画像ID（BigIntのため文字列で返却）
+ *         imageUrl:
+ *           type: string
+ *           description: 画像の公開URL（image_base64 未指定時は更新前のURLをそのまま返す）
+ *         imageUpdated:
+ *           type: boolean
+ *           description: 画像ファイル自体を差し替えたかどうか（image_base64 を指定した場合に true）
+ *     ImageDeleteResult:
+ *       type: object
+ *       description: 画像削除APIの data 部
+ *       properties:
+ *         imageId:
+ *           type: string
+ *           description: 削除した画像ID（BigIntのため文字列で返却）
+ *         deleted:
+ *           type: boolean
+ *           description: 削除に成功したかどうか
+ *           example: true
  *     ImageUpdate:
  *       type: object
  *       properties:
