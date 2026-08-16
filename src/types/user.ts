@@ -47,24 +47,35 @@
  *
  *     UserInput:
  *       type: object
- *       required:
- *         - email
- *         - displayName
+ *       description: |
+ *         ユーザー登録のリクエストボディ。
+ *         全項目が任意で、未指定の項目は null として登録される。
+ *         uid は他ユーザーのUIDでのレコード作成を防ぐためリクエストボディからは受け取らず、
+ *         検証済みトークンのUIDをサーバー側で設定する。
  *       properties:
  *         email:
  *           type: string
  *           format: email
- *           description: メールアドレス
+ *           description: メールアドレス（正規化して保存される）
  *           example: 'user@example.com'
  *         displayName:
  *           type: string
- *           description: 表示名
+ *           maxLength: 50
+ *           description: 表示名（前後の空白除去とHTMLエスケープを行って保存される）
  *           example: 'Taro Yamada'
- *         photoURL:
+ *         authProvider:
  *           type: string
- *           format: uri
- *           description: プロフィール写真のURL
- *           example: 'https://example.com/profile.jpg'
+ *           enum: [google, facebook, twitter, github, email]
+ *           description: 認証プロバイダー（列挙値以外を指定すると 400 になる）
+ *           example: 'google'
+ *         bio:
+ *           type: string
+ *           maxLength: 500
+ *           description: |
+ *             プロフィール（前後の空白除去とHTMLエスケープを行う）。
+ *             バリデーションは通過するが、userService.createUser の登録対象に
+ *             含まれていないため、現状この値は保存されない。
+ *           example: 'プロフィール情報です'
  */
 export interface User {
     uid: string;

@@ -9,13 +9,6 @@ const userRouter = Router()
 
 /**
  * @swagger
- * tags:
- *   name: Users
- *   description: ユーザー情報の登録・取得
- */
-
-/**
- * @swagger
  * /users:
  *   post:
  *     summary: 新規ユーザーの作成
@@ -45,7 +38,7 @@ const userRouter = Router()
  *                 data:
  *                   $ref: '#/components/schemas/User'
  *       '400':
- *         description: 不正な入力です
+ *         $ref: '#/components/responses/ValidationError'
  *       '401':
  *         description: 認証エラー
  *       '500':
