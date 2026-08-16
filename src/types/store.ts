@@ -6,22 +6,125 @@ import { Prisma } from "../generated/prisma/client";
  * @swagger
  * components:
  *   schemas:
- *     Store:
+ *     StoreToppingCallInput:
  *       type: object
+ *       description: 店舗登録・更新時に指定する店舗別トッピングコール
+ *       required:
+ *         - topping_id
+ *         - call_option_id
+ *         - call_timing
+ *         - noodle_type_id
+ *       properties:
+ *         topping_id:
+ *           type: integer
+ *           description: トッピングID
+ *         call_option_id:
+ *           type: integer
+ *           description: コールオプションID
+ *         call_timing:
+ *           type: string
+ *           enum: [pre_call, post_call]
+ *           description: コールタイミング
+ *         noodle_type_id:
+ *           type: integer
+ *           description: 麺種別ID
+ *     StoreInput:
+ *       type: object
+ *       description: |
+ *         店舗登録・更新のリクエストボディ。
+ *         緯度経度は address から自動計算するため、リクエストでは指定しない。
+ *         id は登録時に採番され、is_close は閉店APIでのみ更新するため、いずれも入力項目ではない。
  *       required:
  *         - store_name
  *         - address
  *         - business_hours
  *         - regular_holidays
+ *         - prior_meal_voucher
+ *         - is_all_increased
+ *         - is_lot
+ *       properties:
+ *         store_name:
+ *           type: string
+ *           maxLength: 255
+ *           description: 店舗名
+ *         branch_name:
+ *           type: string
+ *           maxLength: 255
+ *           nullable: true
+ *           description: 支店名
+ *         address:
+ *           type: string
+ *           maxLength: 255
+ *           description: 住所（この値から緯度経度を自動計算する）
+ *         business_hours:
+ *           type: string
+ *           maxLength: 255
+ *           description: 営業時間
+ *         regular_holidays:
+ *           type: string
+ *           maxLength: 255
+ *           description: 定休日
+ *         prior_meal_voucher:
+ *           type: boolean
+ *           description: 事前食券購入の有無
+ *         is_all_increased:
+ *           type: boolean
+ *           description: 全マシの有無
+ *         is_lot:
+ *           type: boolean
+ *           description: ロット制の有無
+ *         topping_details:
+ *           type: string
+ *           maxLength: 1000
+ *           nullable: true
+ *           description: トッピング詳細
+ *         call_details:
+ *           type: string
+ *           maxLength: 1000
+ *           nullable: true
+ *           description: コール詳細
+ *         lot_detail:
+ *           type: string
+ *           maxLength: 1000
+ *           nullable: true
+ *           description: ロット制詳細
+ *         topping_calls:
+ *           type: array
+ *           description: |
+ *             店舗別トッピングコールの配列。
+ *             更新時は指定した内容で全件置き換える（既存分を削除してから再登録する）。
+ *           items:
+ *             $ref: '#/components/schemas/StoreToppingCallInput'
+ *     StoreListItem:
+ *       type: object
+ *       description: 全店舗情報取得APIが返す店舗情報（select で3項目に限定している）
  *       properties:
  *         id:
- *           type: integer
- *           description: 店舗ID
+ *           type: string
+ *           description: 店舗ID（BigIntのため文字列で返却）
  *         store_name:
  *           type: string
  *           description: 店舗名
  *         branch_name:
  *           type: string
+ *           nullable: true
+ *           description: 支店名
+ *     StoreDetail:
+ *       type: object
+ *       description: |
+ *         店舗情報取得APIが返す店舗詳細。
+ *         店舗別トッピングコールは、コールタイミングごとに整形した4つのフィールドで返る。
+ *         is_close は select に含まれないため返却されない。
+ *       properties:
+ *         id:
+ *           type: string
+ *           description: 店舗ID（BigIntのため文字列で返却）
+ *         store_name:
+ *           type: string
+ *           description: 店舗名
+ *         branch_name:
+ *           type: string
+ *           nullable: true
  *           description: 支店名
  *         address:
  *           type: string
@@ -35,29 +138,87 @@ import { Prisma } from "../generated/prisma/client";
  *         prior_meal_voucher:
  *           type: boolean
  *           description: 事前食券購入の有無
- *         is_close:
+ *         topping_details:
+ *           type: string
+ *           nullable: true
+ *           description: トッピング詳細
+ *         call_details:
+ *           type: string
+ *           nullable: true
+ *           description: コール詳細
+ *         is_all_increased:
  *           type: boolean
- *           description: 閉店フラグ
+ *           description: 全マシの有無
+ *         is_lot:
+ *           type: boolean
+ *           description: ロット制の有無
+ *         lot_detail:
+ *           type: string
+ *           nullable: true
+ *           description: ロット制詳細
+ *         preCallFormatted:
+ *           $ref: '#/components/schemas/FormattedToppingOptionNames'
+ *         postCallFormatted:
+ *           $ref: '#/components/schemas/FormattedToppingOptionNames'
+ *         preCallFormattedIds:
+ *           $ref: '#/components/schemas/FormattedToppingOptionIds'
+ *         postCallFormattedIds:
+ *           $ref: '#/components/schemas/FormattedToppingOptionIds'
+ *     FormattedToppingOptionNames:
+ *       type: object
+ *       description: トッピング名をキーに、選択できるコールオプション名の配列を持つオブジェクト
+ *       additionalProperties:
+ *         type: array
+ *         items:
+ *           type: string
+ *       example:
+ *         ニンニク: [マシ, マシマシ]
+ *     FormattedToppingOptionIds:
+ *       type: object
+ *       description: トッピングIDをキーに、選択できるコールオプションIDの配列を持つオブジェクト
+ *       additionalProperties:
+ *         type: array
+ *         items:
+ *           type: integer
+ *       example:
+ *         '1': [1, 2]
  *     Map:
  *       type: object
+ *       description: |
+ *         マップ情報取得APIが返す位置情報。
+ *         店舗情報はトップレベルではなく store にネストして返る。
  *       properties:
  *         id:
- *           type: integer
- *           description: 店舗ID
- *         store_name:
  *           type: string
- *           description: 店舗名
+ *           description: マップID（BigIntのため文字列で返却。店舗IDではない点に注意）
  *         latitude:
- *           type: number
- *           format: float
- *           description: 緯度
+ *           type: string
+ *           description: 緯度（Prisma の Decimal のため文字列で返却）
+ *           example: '35.68123456'
  *         longitude:
- *           type: number
- *           format: float
- *           description: 経度
- *         is_close:
- *           type: boolean
- *           description: 閉店フラグ
+ *           type: string
+ *           description: 経度（Prisma の Decimal のため文字列で返却）
+ *           example: '139.76712345'
+ *         store:
+ *           type: object
+ *           description: 紐づく店舗情報
+ *           properties:
+ *             id:
+ *               type: string
+ *               description: 店舗ID（BigIntのため文字列で返却）
+ *             store_name:
+ *               type: string
+ *               description: 店舗名
+ *             branch_name:
+ *               type: string
+ *               nullable: true
+ *               description: 支店名
+ *             address:
+ *               type: string
+ *               description: 住所
+ *             is_close:
+ *               type: boolean
+ *               description: 閉店フラグ
  *     StoreWriteResult:
  *       type: object
  *       description: 店舗登録・更新APIが返す店舗情報（返却フィールドを明示的に限定している）

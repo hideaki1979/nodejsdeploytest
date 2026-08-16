@@ -22,7 +22,7 @@ const storeRouter = Router()
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Store'
+ *             $ref: '#/components/schemas/StoreInput'
  *     responses:
  *       '201':
  *         description: 店舗が正常に作成されました。
@@ -77,7 +77,7 @@ storeRouter.post('/', authenticateUser, storeValidationRules, handleValidationEr
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   $ref: '#/components/schemas/Store'
+ *                   $ref: '#/components/schemas/StoreDetail'
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
@@ -90,7 +90,10 @@ storeRouter.get('/:id', storeIdParamValidationRules, handleValidationErrors, cre
  *     tags:
  *       - Stores
  *     summary: 全店舗情報取得
- *     description: データベースに登録されている全ての店舗情報を取得します。
+ *     description: |
+ *       データベースに登録されている全ての店舗情報を取得します。
+ *       店舗選択リスト用のエンドポイントのため、返却されるのは
+ *       id / store_name / branch_name の3項目のみです。
  *     responses:
  *       '200':
  *         description: 正常に全店舗情報を取得しました。
@@ -105,7 +108,7 @@ storeRouter.get('/:id', storeIdParamValidationRules, handleValidationErrors, cre
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Store'
+ *                     $ref: '#/components/schemas/StoreListItem'
  */
 storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
 
@@ -131,7 +134,7 @@ storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Store'
+ *             $ref: '#/components/schemas/StoreInput'
  *     responses:
  *       '200':
  *         description: 正常に店舗情報を更新しました。

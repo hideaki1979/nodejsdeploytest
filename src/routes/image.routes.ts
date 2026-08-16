@@ -42,7 +42,7 @@ const imageRouter = Router({ mergeParams: true })
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   $ref: '#/components/schemas/Image'
+ *                   $ref: '#/components/schemas/ImageWriteResult'
  *       '400':
  *         description: リクエストが無効です。
  *       '401':
@@ -82,7 +82,7 @@ imageRouter.post('/', authenticateUser, imageUploadValidationRules, handleValida
  *                 data:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Image'
+ *                     $ref: '#/components/schemas/ImageListItem'
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
@@ -120,7 +120,7 @@ imageRouter.get(`/`, imageListGetValidationRules, handleValidationErrors, create
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   $ref: '#/components/schemas/Image'
+ *                   $ref: '#/components/schemas/ImageEditDetail'
  *       '404':
  *         $ref: '#/components/responses/ImageNotFound'
  */
@@ -166,7 +166,7 @@ imageRouter.get(`/:imageId`, imageGetValidationRules, handleValidationErrors, cr
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   $ref: '#/components/schemas/Image'
+ *                   $ref: '#/components/schemas/ImageUpdateResult'
  *       '401':
  *         description: 認証されていません。
  *       '403':
@@ -211,6 +211,8 @@ imageRouter.put(`/:imageId`, authenticateUser, imageUpdateValidationRules, handl
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/ImageDeleteResult'
  *       '401':
  *         description: 認証されていません。
  *       '403':
