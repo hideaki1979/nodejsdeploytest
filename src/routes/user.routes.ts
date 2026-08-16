@@ -34,7 +34,16 @@ const userRouter = Router()
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: ユーザー情報が正常に登録されました
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
  *       '400':
  *         description: 不正な入力です
  *       '401':
@@ -69,7 +78,16 @@ userRouter.post(`/`, authenticateUser, userValidationRules, handleValidationErro
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: ユーザー情報が正常に取得されました
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
  *       '401':
  *         description: 認証エラー
  *       '403':
