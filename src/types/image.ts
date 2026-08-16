@@ -45,6 +45,89 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  *         image_url:
  *           type: string
  *           description: 画像の新しいURL
+ *     ImageToppingSelection:
+ *       type: object
+ *       description: 画像に紐づけるトッピングコールの選択内容
+ *       required:
+ *         - topping_id
+ *         - call_option_id
+ *         - store_topping_call_id
+ *       properties:
+ *         topping_id:
+ *           type: integer
+ *           description: トッピングID
+ *         call_option_id:
+ *           type: integer
+ *           description: コールオプションID
+ *         store_topping_call_id:
+ *           type: integer
+ *           description: |
+ *             店舗別トッピングコールID。
+ *             バリデーションの検証対象には入っていないが、
+ *             登録・更新時に BigInt へ変換して保存するため未指定にはできない。
+ *     ImageUploadInput:
+ *       type: object
+ *       description: |
+ *         店舗画像アップロードのリクエストボディ。
+ *         投稿者ID（user_id）はなりすまし防止のためリクエストからは受け取らず、
+ *         検証済みトークンのUIDをサーバー側で設定する。
+ *       required:
+ *         - store_id
+ *         - menu_type
+ *         - menu_name
+ *         - image_base64
+ *       properties:
+ *         store_id:
+ *           type: integer
+ *           description: 店舗ID
+ *         menu_type:
+ *           type: integer
+ *           description: メニュータイプ
+ *         menu_name:
+ *           type: string
+ *           description: メニュー名
+ *         image_base64:
+ *           type: string
+ *           description: |
+ *             data URL形式のBase64画像データ。
+ *             `data:image/(jpeg|png|gif|webp);base64,` で始まる必要がある。
+ *           example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg=='
+ *         topping_selections:
+ *           type: array
+ *           description: 画像に紐づけるトッピングコールの配列（任意）
+ *           items:
+ *             $ref: '#/components/schemas/ImageToppingSelection'
+ *     ImageUpdateInput:
+ *       type: object
+ *       description: |
+ *         店舗画像更新のリクエストボディ。
+ *         image_base64 のみ任意で、指定した場合だけ画像ファイルを差し替える。
+ *         それ以外の必須項目はアップロード時と同じ。
+ *       required:
+ *         - store_id
+ *         - menu_type
+ *         - menu_name
+ *       properties:
+ *         store_id:
+ *           type: integer
+ *           description: 店舗ID
+ *         menu_type:
+ *           type: integer
+ *           description: メニュータイプ
+ *         menu_name:
+ *           type: string
+ *           description: メニュー名
+ *         image_base64:
+ *           type: string
+ *           description: |
+ *             data URL形式のBase64画像データ（任意）。
+ *             未指定の場合は既存の画像URLを維持し、メニュー情報とトッピング選択のみ更新する。
+ *           example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg=='
+ *         topping_selections:
+ *           type: array
+ *           description: 画像に紐づけるトッピングコールの配列（任意。指定すると既存の紐づけを置き換える）
+ *           items:
+ *             $ref: '#/components/schemas/ImageToppingSelection'
  *   responses:
  *      ImageNotFound:
  *          description: 指定された画像が見つかりません。
