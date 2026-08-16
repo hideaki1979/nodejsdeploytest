@@ -13,6 +13,7 @@ on:
       - "tsconfig.json"
       - "eslint.config.mjs"
       - "src/**"
+      - "scripts/**"
       - "prisma/**"
       - "prisma.config.ts"
       - ".github/workflows/build.yml"
@@ -24,6 +25,7 @@ on:
       - "tsconfig.json"
       - "eslint.config.mjs"
       - "src/**"
+      - "scripts/**"
       - "prisma/**"
       - "prisma.config.ts"
       - ".github/workflows/build.yml"
@@ -78,4 +80,4 @@ jobs:
         run: npm run build
 
       - name: Lint
-        run: npx eslint src
+        run: npm run lint
