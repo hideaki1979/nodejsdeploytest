@@ -1,5 +1,5 @@
 import request from 'supertest'
-import { expectApiResponse, expectStatus } from './helpers/assert'
+import { expectApiResponse } from './helpers/assert'
 import { AUTH_HEADER, TEST_USER_ID } from './helpers/auth'
 import { createTestApp } from './helpers/testApp'
 
@@ -68,6 +68,6 @@ describe('Users', () => {
 
         const res = await request(app).get('/users/another-user-uid').set('Authorization', AUTH_HEADER)
 
-        expectStatus(res, 403)
+        expectApiResponse(res, { method: 'get', path: '/users/{uid}', status: 403 })
     })
 })

@@ -47,9 +47,39 @@ const options: swaggerJSDoc.Options = {
                 ErrorResponse: {
                     type: 'object',
                     description: 'errorMiddleware が返すエラーレスポンスの共通形式',
+                    required: ['success', 'error'],
                     properties: {
                         success: { type: 'boolean', example: false },
                         error: { type: 'string', description: 'エラーメッセージ' },
+                    },
+                },
+                AuthErrorResponse: {
+                    type: 'object',
+                    description: [
+                        'authMiddleware（authenticateUser）が返すエラーレスポンスの形式。',
+                        'errorMiddleware を経由せず自前で応答するため、',
+                        'ErrorResponse（success / error）とはキーが異なる点に注意。',
+                    ].join(''),
+                    required: ['status', 'message'],
+                    properties: {
+                        status: {
+                            type: 'string',
+                            description: [
+                                'クライアントが再ログインへ倒すかどうかの分岐に使うエラー種別。',
+                                'AuthServiceUnavailable のみ 503 で、それ以外は 401 で返る。',
+                            ].join(''),
+                            enum: [
+                                'Unauthorized',
+                                'TokenExpired',
+                                'TokenRevoked',
+                                'AccountDisabled',
+                                'AccountNotFound',
+                                'InvalidToken',
+                                'AuthServiceUnavailable',
+                            ],
+                            example: 'InvalidToken',
+                        },
+                        message: { type: 'string', description: 'エラーメッセージ' },
                     },
                 },
                 ValidationErrorDetail: {
@@ -92,6 +122,56 @@ const options: swaggerJSDoc.Options = {
                     content: {
                         'application/json': {
                             schema: { $ref: '#/components/schemas/ErrorResponse' },
+                        },
+                    },
+                },
+                Unauthorized: {
+                    description: [
+                        '認証に失敗しました。\n\n',
+                        'トークンの検証で弾かれた場合は authMiddleware が AuthErrorResponse を返す',
+                        '（status で TokenExpired / TokenRevoked などの種別が分かる）。\n',
+                        '検証を通過した後にコントローラ側で認証情報を確認できなかった場合のみ、',
+                        'errorMiddleware 経由で ErrorResponse が返る。',
+                    ].join(''),
+                    content: {
+                        'application/json': {
+                            schema: {
+                                oneOf: [
+                                    { $ref: '#/components/schemas/AuthErrorResponse' },
+                                    { $ref: '#/components/schemas/ErrorResponse' },
+                                ],
+                            },
+                        },
+                    },
+                },
+                Forbidden: {
+                    description: 'この操作を行う権限がありません。',
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/ErrorResponse' },
+                        },
+                    },
+                },
+                InternalServerError: {
+                    description: [
+                        'サーバー内部でエラーが発生しました。',
+                        '原因の詳細はレスポンスに含めずサーバーログにのみ出力する。',
+                    ].join(''),
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/ErrorResponse' },
+                        },
+                    },
+                },
+                AuthServiceUnavailable: {
+                    description: [
+                        'Firebase Authentication に接続できませんでした。\n',
+                        'トークンが無効なわけではないため、クライアントは再ログインではなく',
+                        '時間をおいた再試行へ倒すこと。',
+                    ].join(''),
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/AuthErrorResponse' },
                         },
                     },
                 },

@@ -210,6 +210,7 @@ import { Image, ImageStoreToppingCall } from "../generated/prisma/client";
  *            application/json:
  *              schema:
  *                type: object
+ *                required: [success, error]
  *                properties:
  *                  success:
  *                    type: boolean

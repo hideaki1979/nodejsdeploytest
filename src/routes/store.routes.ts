@@ -42,11 +42,11 @@ const storeRouter = Router()
  *       '400':
  *         $ref: '#/components/responses/ValidationError'
  *       '401':
- *         description: 認証トークンが無効、または設定されていません。
+ *         $ref: '#/components/responses/Unauthorized'
  *       '500':
- *         description: サーバーエラー。
+ *         $ref: '#/components/responses/InternalServerError'
  *       '503':
- *         description: 認証サービスに接続できません。時間をおいて再試行してください。
+ *         $ref: '#/components/responses/AuthServiceUnavailable'
  */
 storeRouter.post('/', authenticateUser, storeValidationRules, handleValidationErrors, createHandler(StoreController, "createStore"))
 
@@ -164,11 +164,11 @@ storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
  *       '400':
  *         $ref: '#/components/responses/ValidationError'
  *       '401':
- *         description: 認証トークンが無効、または設定されていません。
+ *         $ref: '#/components/responses/Unauthorized'
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  *       '503':
- *         description: 認証サービスに接続できません。時間をおいて再試行してください。
+ *         $ref: '#/components/responses/AuthServiceUnavailable'
  */
 storeRouter.put('/:id', authenticateUser, storeValidationRules, handleValidationErrors, createHandler(StoreController, 'updateStore'))
 
@@ -221,11 +221,11 @@ storeRouter.put('/:id', authenticateUser, storeValidationRules, handleValidation
  *       '400':
  *         $ref: '#/components/responses/ValidationError'
  *       '401':
- *         description: 認証トークンが無効、または設定されていません。
+ *         $ref: '#/components/responses/Unauthorized'
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  *       '503':
- *         description: 認証サービスに接続できません。時間をおいて再試行してください。
+ *         $ref: '#/components/responses/AuthServiceUnavailable'
  */
 storeRouter.patch('/:id/close', authenticateUser, storeCloseValidationRules, handleValidationErrors, createHandler(StoreController, 'storeClose'))
 

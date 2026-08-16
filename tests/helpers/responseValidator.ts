@@ -64,6 +64,11 @@ function encodePointerSegment(segment: string): string {
     return encodeURIComponent(segment.replace(/~/g, '~0').replace(/\//g, '~1'))
 }
 
+/** encodePointerSegment の逆。$ref のセグメントから元のキー名へ戻す */
+function decodePointerSegment(segment: string): string {
+    return decodeURIComponent(segment).replace(/~1/g, '/').replace(/~0/g, '~')
+}
+
 export interface OperationRef {
     method: string
     /** OpenAPI のパステンプレート。例: /stores/{id}/toppingcalls */
@@ -71,36 +76,82 @@ export interface OperationRef {
     status: number
 }
 
+/** $ref を辿った先のレスポンスと、その位置を指す JSON Pointer */
+interface ResolvedResponse {
+    response: Record<string, unknown>
+    /** レスポンスオブジェクトまでのセグメント列（URIフラグメント形式でエスケープ済み） */
+    pointer: string[]
+}
+
+/** 循環参照で無限ループしないための上限（実際の spec は1段しか辿らない） */
+const MAX_REF_DEPTH = 5
+
+/**
+ * `$ref: '#/components/responses/StoreNotFound'` のような
+ * spec 内部への参照を辿り、実体のレスポンスオブジェクトへ解決する。
+ *
+ * swagger-jsdoc は $ref を展開しないため、辿らないと
+ * 「content が無い＝本文なしのレスポンス」と誤認してしまう。
+ */
+function resolveRefs(response: Record<string, unknown>, pointer: string[]): ResolvedResponse {
+    let current = response
+    let segments = pointer
+
+    for (let depth = 0; typeof current.$ref === 'string'; depth += 1) {
+        const ref = current.$ref
+        if (depth >= MAX_REF_DEPTH) {
+            throw new Error(`$ref の入れ子が深すぎます（循環参照の可能性）: ${ref}`)
+        }
+        if (!ref.startsWith('#/')) {
+            throw new Error(`spec 内部への参照のみ対応しています: ${ref}`)
+        }
+
+        segments = ref.slice(2).split('/')
+        const target = segments.reduce<unknown>(
+            (node, segment) =>
+                node === null || typeof node !== 'object'
+                    ? undefined
+                    : (node as Record<string, unknown>)[decodePointerSegment(segment)],
+            swaggerSpec,
+        )
+
+        if (target === null || typeof target !== 'object') {
+            throw new Error(`$ref を解決できませんでした: ${ref}`)
+        }
+        current = target as Record<string, unknown>
+    }
+
+    return { response: current, pointer: segments }
+}
+
 /** spec 上の当該レスポンス（responses[status]）を取り出す */
-function getResponseObject(operation: OperationRef): Record<string, unknown> {
+function getResponseObject(operation: OperationRef): ResolvedResponse {
     const paths = (swaggerSpec as { paths?: Record<string, Record<string, unknown>> }).paths ?? {}
     const pathItem = paths[operation.path] as Record<string, unknown> | undefined
-    const method = pathItem?.[operation.method.toLowerCase()] as
+    const method = operation.method.toLowerCase()
+    const operationObject = pathItem?.[method] as
         | { responses?: Record<string, Record<string, unknown>> }
         | undefined
-    const response = method?.responses?.[String(operation.status)]
+    const response = operationObject?.responses?.[String(operation.status)]
 
     if (!response) {
         throw new Error(
             `spec に ${operation.method.toUpperCase()} ${operation.path} の ${operation.status} が定義されていません`,
         )
     }
-    return response
+
+    return resolveRefs(response, [
+        'paths',
+        encodePointerSegment(operation.path),
+        method,
+        'responses',
+        String(operation.status),
+    ])
 }
 
-function getValidator(operation: OperationRef, contentType: string): ValidateFunction | undefined {
+function getValidator(pointer: string[], contentType: string): ValidateFunction | undefined {
     return ajv.getSchema(
-        [
-            'openapi#',
-            'paths',
-            encodePointerSegment(operation.path),
-            operation.method.toLowerCase(),
-            'responses',
-            String(operation.status),
-            'content',
-            encodePointerSegment(contentType),
-            'schema',
-        ].join('/'),
+        ['openapi#', ...pointer, 'content', encodePointerSegment(contentType), 'schema'].join('/'),
     )
 }
 
@@ -138,7 +189,7 @@ export function findResponseViolations(
     operation: OperationRef,
     actualContentType: string | undefined,
 ): string[] {
-    const response = getResponseObject(operation)
+    const { response, pointer } = getResponseObject(operation)
     const content = response.content as Record<string, { schema?: unknown }> | undefined
 
     // spec が本文を定義していないレスポンス（204 など）
@@ -166,7 +217,7 @@ export function findResponseViolations(
     // spec にスキーマの記載が無ければ検証対象なし
     if (content[actualContentType].schema === undefined) return []
 
-    const validate = getValidator(operation, actualContentType)
+    const validate = getValidator(pointer, actualContentType)
     if (!validate) {
         // spec にスキーマはあるのに Ajv が引けない＝参照の組み立てが壊れている。
         // 「違反なし」で返すと検証したつもりの素通りになるため、明示的に落とす。
