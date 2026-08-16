@@ -4,28 +4,46 @@
  *   schemas:
  *     Topping:
  *       type: object
+ *       description: 全トッピング情報取得APIが返すトッピング（Prismaの行をそのまま返している）
  *       properties:
  *         id:
- *           type: integer
- *           description: トッピングID
+ *           type: string
+ *           description: トッピングID（BigIntのため文字列で返却）
  *         topping_name:
  *           type: string
  *           description: トッピング名
  *         topping_category:
  *           type: integer
  *           description: カテゴリID
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *           description: 作成日時
+ *         updated_at:
+ *           type: string
+ *           format: date-time
+ *           description: 更新日時
  *     CallOption:
  *       type: object
+ *       description: 全コールオプション取得APIが返すコールオプション（Prismaの行をそのまま返している）
  *       properties:
  *         id:
- *           type: integer
- *           description: コールオプションID
+ *           type: string
+ *           description: コールオプションID（BigIntのため文字列で返却）
  *         call_option_name:
  *           type: string
  *           description: コール名
  *         call_category:
  *           type: integer
  *           description: コールカテゴリ
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *           description: 作成日時
+ *         updated_at:
+ *           type: string
+ *           format: date-time
+ *           description: 更新日時
  *     ResultToppingCall:
  *       type: object
  *       description: 1トッピングと、そのトッピングカテゴリに一致するコールオプションの組
