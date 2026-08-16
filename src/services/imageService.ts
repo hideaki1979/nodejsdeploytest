@@ -120,18 +120,24 @@ export class ImageService {
             })
 
             // 画像別トッピングコール情報を整形
+            //
+            // BigInt は Number() ではなく String() で返す。
+            // setupBigIntSerialization により BigInt は全体で文字列としてシリアライズされる方針であり、
+            // ここだけ数値化すると個別取得（getImageByImageId）と型が食い違う。
+            // 加えて Number() は 2^53 を超えると精度が落ちるため、主キーの変換には使わない。
+            // menu_type は BigInt ではなく Int のため数値のままでよい
             const formattedToppingCalls = toppingCalls.map(call => ({
-                topping_id: Number(call.topping_id),
+                topping_id: String(call.topping_id),
                 topping_name: call.store_topping_call.topping.topping_name,
-                call_option_id: Number(call.store_topping_call.call_option_id),
+                call_option_id: String(call.store_topping_call.call_option_id),
                 call_option_name: call.store_topping_call.call_option.call_option_name
             }))
 
 
             //  StoreImageDownloadData型で格納する。
             storeImageToppingOptions.push({
-                id: Number(image.id),
-                store_id: Number(image.store_id),
+                id: String(image.id),
+                store_id: String(image.store_id),
                 user_id: image.user_id,
                 menu_type: image.menu_type,
                 menu_name: image.menu_name,
