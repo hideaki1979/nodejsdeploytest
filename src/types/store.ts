@@ -130,6 +130,71 @@ import { Prisma } from "../generated/prisma/client";
  *         noodle_type_id:
  *           type: string
  *           description: 麺種別ID（BigIntのため文字列で返却）
+ *     StoreToppingCallOption:
+ *       type: object
+ *       description: 1トッピングに対して選択できるコールオプション
+ *       properties:
+ *         optionId:
+ *           type: integer
+ *           description: コールオプションID（Number変換済みのため数値）
+ *         optionName:
+ *           type: string
+ *           description: コールオプション名
+ *         storeToppingCallId:
+ *           type: integer
+ *           description: 店舗別トッピングコールID（Number変換済みのため数値）
+ *     StoreToppingCallGroup:
+ *       type: object
+ *       description: トッピング単位でグループ化したコールオプション
+ *       properties:
+ *         toppingId:
+ *           type: integer
+ *           description: トッピングID（Number変換済みのため数値）
+ *         toppingName:
+ *           type: string
+ *           description: トッピング名
+ *         options:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/StoreToppingCallOption'
+ *     StoreToppingCallsResult:
+ *       type: object
+ *       description: 店舗のトッピングコール情報取得APIが返す整形済みデータ
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: 店舗ID（Number変換済みのため数値）
+ *         store_name:
+ *           type: string
+ *           description: 店舗名
+ *         branch_name:
+ *           type: string
+ *           nullable: true
+ *           description: 支店名
+ *         formattedToppingOptions:
+ *           type: array
+ *           description: |
+ *             `[トッピングID, トッピング情報]` の2要素タプルの配列。
+ *             Map を Array.from() で変換したものをそのまま返しているため、
+ *             オブジェクトの配列ではなくタプルの配列になる点に注意。
+ *             OpenAPI 3.0 はタプルを表現できないため、要素の型は oneOf で示している。
+ *           items:
+ *             type: array
+ *             minItems: 2
+ *             maxItems: 2
+ *             items:
+ *               oneOf:
+ *                 - type: integer
+ *                   description: トッピングID
+ *                 - $ref: '#/components/schemas/StoreToppingCallGroup'
+ *           example:
+ *             - - 1
+ *               - toppingId: 1
+ *                 toppingName: ニンニク
+ *                 options:
+ *                   - optionId: 1
+ *                     optionName: マシ
+ *                     storeToppingCallId: 10
  *     StoreWriteResponseData:
  *       type: object
  *       description: 店舗登録・更新APIの data 部

@@ -223,7 +223,9 @@ storeRouter.patch('/:id/close', authenticateUser, storeCloseValidationRules, han
  *     tags:
  *       - Stores
  *     summary: 店舗のトッピングコール情報取得
- *     description: 指定された店舗のトッピングコール情報を取得します。
+ *     description: |
+ *       指定された店舗のトッピングコール情報を、トッピング単位でグループ化して取得します。
+ *       クエリパラメータを指定すると、対象の店舗別トッピングコールを絞り込めます。
  *     parameters:
  *       - in: path
  *         name: id
@@ -231,6 +233,34 @@ storeRouter.patch('/:id/close', authenticateUser, storeCloseValidationRules, han
  *         schema:
  *           type: integer
  *         description: 店舗ID
+ *       - in: query
+ *         name: call_timing
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [pre_call, post_call, all]
+ *         description: |
+ *           コールタイミングでの絞り込み。
+ *           `all` を指定した場合は絞り込みを行わない。
+ *           これら以外の値を指定すると 400 になる。
+ *       - in: query
+ *         name: topping_id
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         description: トッピングIDでの絞り込み（数値に変換できない値は無視される）
+ *       - in: query
+ *         name: call_option_id
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         description: コールオプションIDでの絞り込み（数値に変換できない値は無視される）
+ *       - in: query
+ *         name: noodleTypeId
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         description: 麺種別IDでの絞り込み（数値に変換できない値は無視される）
  *     responses:
  *       '200':
  *         description: 正常にトッピングコール情報を取得しました。
@@ -243,14 +273,9 @@ storeRouter.patch('/:id/close', authenticateUser, storeCloseValidationRules, han
  *                   type: boolean
  *                   example: true
  *                 data:
- *                   type: array
- *                   items:
- *                      type: object
- *                      properties:
- *                        topping_id:
- *                          type: integer
- *                        call_name:
- *                          type: string
+ *                   $ref: '#/components/schemas/StoreToppingCallsResult'
+ *       '400':
+ *         description: 店舗IDが不正、または call_timing に許可されていない値が指定されました。
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
@@ -258,7 +283,7 @@ storeRouter.get('/:id/toppingcalls', createHandler(StoreController, 'getStoreTop
 
 /**
  * @swagger
- * /map:
+ * /maps:
  *   get:
  *     tags:
  *       - Map

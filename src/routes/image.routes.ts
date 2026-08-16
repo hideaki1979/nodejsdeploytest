@@ -29,13 +29,7 @@ const imageRouter = Router({ mergeParams: true })
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               image_base64:
- *                 type: string
- *                 description: Base64エンコードされた画像データ
- *             required:
- *               - image_base64
+ *             $ref: '#/components/schemas/ImageUploadInput'
  *     responses:
  *       '201':
  *         description: 画像が正常にアップロードされました。
@@ -159,11 +153,7 @@ imageRouter.get(`/:imageId`, imageGetValidationRules, handleValidationErrors, cr
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               image_base64:
- *                 type: string
- *                 description: Base64エンコードされた新しい画像データ（オプション）
+ *             $ref: '#/components/schemas/ImageUpdateInput'
  *     responses:
  *       '200':
  *         description: 正常に画像情報を更新しました。
