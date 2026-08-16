@@ -116,6 +116,17 @@ function describeError(error: ErrorObject): string {
 }
 
 /**
+ * 実際に本文が返っているか。
+ *
+ * Content-Type が無いレスポンスの本文は文字列のまま渡ってくる（supertest の res.text）。
+ * 本文なしの場合は空文字になるため、長さで判定する。
+ */
+function hasBody(body: unknown): boolean {
+    if (typeof body === 'string') return body.length > 0
+    return body !== undefined && body !== null
+}
+
+/**
  * レスポンスを検証し、spec と食い違う点を人が読める形で返す。一致していれば空配列。
  *
  * Content-Type も契約の一部（responses[status].content のキー）なので、
@@ -132,9 +143,14 @@ export function findResponseViolations(
 
     // spec が本文を定義していないレスポンス（204 など）
     if (!content) {
-        return actualContentType === undefined
-            ? []
-            : [`spec は本文なしと定義していますが Content-Type '${actualContentType}' が返りました`]
+        // Content-Type だけを見ると、ヘッダを外して本文を書くケース
+        // （res.end() の直接呼び出しなど）を見逃す。本文の有無も併せて確認する。
+        return [
+            ...(hasBody(body) ? ['spec は本文なしと定義していますが本文が返りました'] : []),
+            ...(actualContentType === undefined
+                ? []
+                : [`spec は本文なしと定義していますが Content-Type '${actualContentType}' が返りました`]),
+        ]
     }
 
     const declared = Object.keys(content)

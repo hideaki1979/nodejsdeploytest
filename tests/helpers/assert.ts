@@ -40,16 +40,20 @@ function isJsonContentType(contentType: string | undefined): boolean {
  * Content-Type もテストの申告ではなく実際のレスポンスヘッダから採る。
  */
 export function expectApiResponse(res: Response, operation: OperationRef): void {
-    // 網羅性の判定は「実行されたテスト」を根拠にするため、ここで記録する
-    recordCoveredOperation(formatOperation(operation.method, operation.path))
-
     expectStatus(res, operation.status)
 
     const contentType = actualContentType(res)
     const body = isJsonContentType(contentType) ? JSON.parse(res.text) : res.text
 
     const violations = findResponseViolations(body, operation, contentType)
-    if (violations.length === 0) return
+    if (violations.length === 0) {
+        // 記録は全ての検証を通過した後に行う。
+        // 先に記録すると、呼び出し側が例外を握り潰した場合
+        // （検証器自体を検証するテストなど）に、失敗した検証が
+        // 「網羅済み」として数えられてしまう。
+        recordCoveredOperation(formatOperation(operation.method, operation.path))
+        return
+    }
 
     throw new Error(
         [

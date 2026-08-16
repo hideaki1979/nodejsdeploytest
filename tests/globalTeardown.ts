@@ -46,6 +46,8 @@ export default function globalTeardown(globalConfig: GlobalConfigLike): void {
             ...missing.map((operation) => `  - ${operation}`),
             '',
             'tests/ 配下に expectApiResponse を使ったテストを追加してください。',
+            '（検証に失敗したオペレーションは網羅済みとして数えないため、'
+            + '失敗しているテストがある場合はそちらを先に解消してください）',
         ].join('\n'),
     )
 }
