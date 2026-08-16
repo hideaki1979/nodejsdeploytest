@@ -11,7 +11,8 @@ const toppingRouter = Router()
  *     tags:
  *       - Toppings
  *     summary: 全トッピング情報取得
- *     description: データベースに登録されている全てのトッピング情報を取得します。
+ *     description: データベースに登録されている全てのトッピング情報を取得します。認証は不要です。
+ *     security: []
  *     responses:
  *       '200':
  *         description: 正常に全トッピング情報を取得しました。
@@ -23,6 +24,9 @@ const toppingRouter = Router()
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: トッピング情報を正常に取得できました
  *                 data:
  *                   type: array
  *                   items:
@@ -39,7 +43,8 @@ toppingRouter.get('/', createHandler(ToppingController, 'getToppingAll'))
  *     summary: フォーマット済みトッピングコールオプション取得
  *     description: |
  *       フロントエンド表示用に、各トッピングとそのトッピングカテゴリに一致するコールオプションを取得します。
- *       data は配列ではなく、トッピングIDをキーとしたオブジェクトで返ります。
+ *       data は配列ではなく、トッピングIDをキーとしたオブジェクトで返ります。認証は不要です。
+ *     security: []
  *     responses:
  *       '200':
  *         description: 正常にフォーマット済みトッピングコールオプションを取得しました。
@@ -51,6 +56,9 @@ toppingRouter.get('/', createHandler(ToppingController, 'getToppingAll'))
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: トッピング・コールオプション情報を正常に取得できました
  *                 data:
  *                   $ref: '#/components/schemas/FormattedToppingCallOptionMap'
  */
@@ -62,7 +70,8 @@ toppingRouter.get(`/calloptions/formatted`, createHandler(ToppingController, 'ge
  *     tags:
  *       - Toppings
  *     summary: 全コールオプション取得
- *     description: データベースに登録されている全てのコールオプション（マシマシ等）を取得します。
+ *     description: データベースに登録されている全てのコールオプション（マシマシ等）を取得します。認証は不要です。
+ *     security: []
  *     responses:
  *       '200':
  *         description: 正常に全コールオプション情報を取得しました。
@@ -74,6 +83,9 @@ toppingRouter.get(`/calloptions/formatted`, createHandler(ToppingController, 'ge
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: コールオプション情報を正常に取得できました
  *                 data:
  *                   type: array
  *                   items:

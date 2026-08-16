@@ -41,10 +41,13 @@ const imageRouter = Router({ mergeParams: true })
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 画像が正常にアップロードしました！
  *                 data:
  *                   $ref: '#/components/schemas/ImageWriteResult'
  *       '400':
- *         description: リクエストが無効です。
+ *         $ref: '#/components/responses/ValidationError'
  *       '401':
  *         description: 認証されていません。
  *       '404':
@@ -60,7 +63,8 @@ imageRouter.post('/', authenticateUser, imageUploadValidationRules, handleValida
  *     tags:
  *       - Images
  *     summary: 店舗画像一覧取得
- *     description: 指定された店舗の全ての画像を取得します。
+ *     description: 指定された店舗の全ての画像を取得します。認証は不要です。
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: storeId
@@ -79,10 +83,15 @@ imageRouter.post('/', authenticateUser, imageUploadValidationRules, handleValida
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 店舗別画像情報を正常に取得できました。
  *                 data:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/ImageListItem'
+ *       '400':
+ *         $ref: '#/components/responses/ValidationError'
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
@@ -94,7 +103,8 @@ imageRouter.get(`/`, imageListGetValidationRules, handleValidationErrors, create
  *     tags:
  *       - Images
  *     summary: 店舗画像の個別取得
- *     description: 指定された店舗IDと画像IDに一致する画像情報を1件取得します。
+ *     description: 指定された店舗IDと画像IDに一致する画像情報を1件取得します。認証は不要です。
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: storeId
@@ -119,8 +129,13 @@ imageRouter.get(`/`, imageListGetValidationRules, handleValidationErrors, create
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 画像情報を正常取得しました
  *                 data:
  *                   $ref: '#/components/schemas/ImageEditDetail'
+ *       '400':
+ *         $ref: '#/components/responses/ValidationError'
  *       '404':
  *         $ref: '#/components/responses/ImageNotFound'
  */
@@ -165,8 +180,13 @@ imageRouter.get(`/:imageId`, imageGetValidationRules, handleValidationErrors, cr
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 画像情報が正常に更新されました
  *                 data:
  *                   $ref: '#/components/schemas/ImageUpdateResult'
+ *       '400':
+ *         $ref: '#/components/responses/ValidationError'
  *       '401':
  *         description: 認証されていません。
  *       '403':
@@ -211,8 +231,13 @@ imageRouter.put(`/:imageId`, authenticateUser, imageUpdateValidationRules, handl
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 画像が正常に削除されました
  *                 data:
  *                   $ref: '#/components/schemas/ImageDeleteResult'
+ *       '400':
+ *         $ref: '#/components/responses/ValidationError'
  *       '401':
  *         description: 認証されていません。
  *       '403':

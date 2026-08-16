@@ -40,7 +40,7 @@ const storeRouter = Router()
  *                 data:
  *                   $ref: '#/components/schemas/StoreWriteResponseData'
  *       '400':
- *         description: リクエストが無効です。
+ *         $ref: '#/components/responses/ValidationError'
  *       '401':
  *         description: 認証トークンが無効、または設定されていません。
  *       '500':
@@ -57,7 +57,8 @@ storeRouter.post('/', authenticateUser, storeValidationRules, handleValidationEr
  *     tags:
  *       - Stores
  *     summary: 店舗情報取得
- *     description: 指定されたIDの店舗情報を取得します。
+ *     description: 指定されたIDの店舗情報を取得します。認証は不要です。
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -76,8 +77,13 @@ storeRouter.post('/', authenticateUser, storeValidationRules, handleValidationEr
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 店舗情報を正常に取得できました。
  *                 data:
  *                   $ref: '#/components/schemas/StoreDetail'
+ *       '400':
+ *         $ref: '#/components/responses/ValidationError'
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
@@ -93,7 +99,8 @@ storeRouter.get('/:id', storeIdParamValidationRules, handleValidationErrors, cre
  *     description: |
  *       データベースに登録されている全ての店舗情報を取得します。
  *       店舗選択リスト用のエンドポイントのため、返却されるのは
- *       id / store_name / branch_name の3項目のみです。
+ *       id / store_name / branch_name の3項目のみです。認証は不要です。
+ *     security: []
  *     responses:
  *       '200':
  *         description: 正常に全店舗情報を取得しました。
@@ -105,6 +112,9 @@ storeRouter.get('/:id', storeIdParamValidationRules, handleValidationErrors, cre
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 全店舗情報を正常に取得できました。
  *                 data:
  *                   type: array
  *                   items:
@@ -152,7 +162,7 @@ storeRouter.get('/', createHandler(StoreController, 'getStoresAll'))
  *                 data:
  *                   $ref: '#/components/schemas/StoreWriteResponseData'
  *       '400':
- *         description: リクエストが無効です。
+ *         $ref: '#/components/responses/ValidationError'
  *       '401':
  *         description: 認証トークンが無効、または設定されていません。
  *       '404':
@@ -209,7 +219,7 @@ storeRouter.put('/:id', authenticateUser, storeValidationRules, handleValidation
  *                 data:
  *                   $ref: '#/components/schemas/StoreCloseResult'
  *       '400':
- *         description: リクエストが無効です。
+ *         $ref: '#/components/responses/ValidationError'
  *       '401':
  *         description: 認証トークンが無効、または設定されていません。
  *       '404':
@@ -228,7 +238,8 @@ storeRouter.patch('/:id/close', authenticateUser, storeCloseValidationRules, han
  *     summary: 店舗のトッピングコール情報取得
  *     description: |
  *       指定された店舗のトッピングコール情報を、トッピング単位でグループ化して取得します。
- *       クエリパラメータを指定すると、対象の店舗別トッピングコールを絞り込めます。
+ *       クエリパラメータを指定すると、対象の店舗別トッピングコールを絞り込めます。認証は不要です。
+ *     security: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -275,10 +286,13 @@ storeRouter.patch('/:id/close', authenticateUser, storeCloseValidationRules, han
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: コールタイミングに該当するコールトッピング情報を正常に取得できました。
  *                 data:
  *                   $ref: '#/components/schemas/StoreToppingCallsResult'
  *       '400':
- *         description: 店舗IDが不正、または call_timing に許可されていない値が指定されました。
+ *         $ref: '#/components/responses/BadRequest'
  *       '404':
  *         $ref: '#/components/responses/StoreNotFound'
  */
@@ -291,7 +305,8 @@ storeRouter.get('/:id/toppingcalls', createHandler(StoreController, 'getStoreTop
  *     tags:
  *       - Map
  *     summary: 全店舗のマップ情報取得
- *     description: 全ての店舗の位置情報（緯度経度）を取得します。
+ *     description: 全ての店舗の位置情報（緯度経度）を取得します。認証は不要です。
+ *     security: []
  *     responses:
  *       '200':
  *         description: 正常にマップ情報を取得しました。
@@ -303,6 +318,9 @@ storeRouter.get('/:id/toppingcalls', createHandler(StoreController, 'getStoreTop
  *                 success:
  *                   type: boolean
  *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: 店舗情報を正常に取得できました。
  *                 data:
  *                   type: array
  *                   items:
