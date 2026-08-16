@@ -8,7 +8,7 @@ describe('System', () => {
 
         const res = await request(app).get('/')
 
-        expectApiResponse(res, { method: 'get', path: '/', status: 200, contentType: 'text/html' })
+        expectApiResponse(res, { method: 'get', path: '/', status: 200 })
     })
 
     it('GET /health が spec どおりに応答する', async () => {
@@ -16,6 +16,6 @@ describe('System', () => {
 
         const res = await request(app).get('/health')
 
-        expectApiResponse(res, { method: 'get', path: '/health', status: 200, contentType: 'text/html' })
+        expectApiResponse(res, { method: 'get', path: '/health', status: 200 })
     })
 })

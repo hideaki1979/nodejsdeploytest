@@ -54,54 +54,76 @@ export interface OperationRef {
     /** OpenAPI のパステンプレート。例: /stores/{id}/toppingcalls */
     path: string
     status: number
-    /** 省略時は application/json */
-    contentType?: string
 }
 
-/**
- * 検証に使うスキーマを取り出す。spec に content が無いレスポンス（本文なし）は null を返す。
- */
-function getValidator(operation: OperationRef): ValidateFunction | null {
-    const contentType = operation.contentType ?? 'application/json'
-    const ref = [
-        'openapi#',
-        'paths',
-        escapeJsonPointer(operation.path),
-        operation.method.toLowerCase(),
-        'responses',
-        String(operation.status),
-        'content',
-        escapeJsonPointer(contentType),
-        'schema',
-    ].join('/')
+/** spec 上の当該レスポンス（responses[status]）を取り出す */
+function getResponseObject(operation: OperationRef): Record<string, unknown> {
+    const paths = (swaggerSpec as { paths?: Record<string, Record<string, unknown>> }).paths ?? {}
+    const pathItem = paths[operation.path] as Record<string, unknown> | undefined
+    const method = (pathItem?.[operation.method.toLowerCase()] ?? undefined) as
+        | { responses?: Record<string, Record<string, unknown>> }
+        | undefined
+    const response = method?.responses?.[String(operation.status)]
 
-    const validate = ajv.getSchema(ref)
-    if (validate) return validate
+    if (!response) {
+        throw new Error(
+            `spec に ${operation.method.toUpperCase()} ${operation.path} の ${operation.status} が定義されていません`,
+        )
+    }
+    return response
+}
 
-    // content 自体が無い（本文を返さない）ケースと、spec の記載漏れを区別する
-    const responseRef = [
-        'openapi#',
-        'paths',
-        escapeJsonPointer(operation.path),
-        operation.method.toLowerCase(),
-        'responses',
-        String(operation.status),
-    ].join('/')
-
-    if (ajv.getSchema(responseRef)) return null
-
-    throw new Error(
-        `spec に ${operation.method.toUpperCase()} ${operation.path} の ${operation.status} が定義されていません`,
+function getValidator(operation: OperationRef, contentType: string): ValidateFunction | undefined {
+    return ajv.getSchema(
+        [
+            'openapi#',
+            'paths',
+            escapeJsonPointer(operation.path),
+            operation.method.toLowerCase(),
+            'responses',
+            String(operation.status),
+            'content',
+            escapeJsonPointer(contentType),
+            'schema',
+        ].join('/'),
     )
 }
 
 /**
- * レスポンスボディを検証し、spec と食い違う点を人が読める形で返す。一致していれば空配列。
+ * レスポンスを検証し、spec と食い違う点を人が読める形で返す。一致していれば空配列。
+ *
+ * Content-Type も契約の一部（responses[status].content のキー）なので、
+ * テストの申告ではなく実際のレスポンスヘッダを突き合わせる。
+ * ここを見ないと、実装が text/html から application/json に変わっても気づけない。
  */
-export function findResponseViolations(body: unknown, operation: OperationRef): string[] {
-    const validate = getValidator(operation)
-    if (!validate) return []
-    if (validate(body)) return []
+export function findResponseViolations(
+    body: unknown,
+    operation: OperationRef,
+    actualContentType: string | undefined,
+): string[] {
+    const response = getResponseObject(operation)
+    const content = response.content as Record<string, unknown> | undefined
+
+    // spec が本文を定義していないレスポンス（204 など）
+    if (!content) {
+        return actualContentType === undefined
+            ? []
+            : [`spec は本文なしと定義していますが Content-Type '${actualContentType}' が返りました`]
+    }
+
+    const declared = Object.keys(content)
+    if (actualContentType === undefined) {
+        return [`Content-Type が返っていません（spec の定義: ${declared.join(', ')}）`]
+    }
+    if (!declared.includes(actualContentType)) {
+        return [
+            `Content-Type '${actualContentType}' は spec に定義されていません（定義: ${declared.join(', ')}）`,
+        ]
+    }
+
+    const validate = getValidator(operation, actualContentType)
+    // content に載っているがスキーマの記載が無いケースは、検証対象なしとして扱う
+    if (!validate || validate(body)) return []
 
     return (validate.errors ?? []).map((error) => {
         const at = error.instancePath === '' ? '(ルート)' : error.instancePath

@@ -1,5 +1,7 @@
 import type { Response } from 'supertest'
+import { recordCoveredOperation } from './coverage'
 import { findResponseViolations, type OperationRef } from './responseValidator'
+import { formatOperation } from './specOperations'
 
 function describeBody(res: Response): string {
     if (res.body && Object.keys(res.body).length > 0) return JSON.stringify(res.body, null, 2)
@@ -18,27 +20,44 @@ export function expectStatus(res: Response, expected: number): void {
     throw new Error(`HTTP ${expected} を期待しましたが ${res.status} でした。\n${describeBody(res)}`)
 }
 
+/** `application/json; charset=utf-8` → `application/json` */
+function actualContentType(res: Response): string | undefined {
+    const header = res.headers['content-type']
+    if (typeof header !== 'string' || header === '') return undefined
+    return header.split(';')[0].trim().toLowerCase()
+}
+
+/** JSON として解釈すべき Content-Type か（application/problem+json などの +json も含む） */
+function isJsonContentType(contentType: string | undefined): boolean {
+    return contentType === 'application/json' || contentType?.endsWith('+json') === true
+}
+
 /**
- * ステータスコードと、実際に送信されたレスポンスボディが spec を満たすことを検証する。
+ * ステータスコード・Content-Type・レスポンスボディが spec を満たすことを検証する。
  *
  * 契約テストの中心となるアサーション。
  * ボディは res.text をパースしたもの（＝HTTPで実際に流れた内容）を使う。
+ * Content-Type もテストの申告ではなく実際のレスポンスヘッダから採る。
  */
 export function expectApiResponse(res: Response, operation: OperationRef): void {
+    // 網羅性の判定は「実行されたテスト」を根拠にするため、ここで記録する
+    recordCoveredOperation(formatOperation(operation.method, operation.path))
+
     expectStatus(res, operation.status)
 
-    const contentType = operation.contentType ?? 'application/json'
-    const body = contentType === 'application/json' ? JSON.parse(res.text) : res.text
+    const contentType = actualContentType(res)
+    const body = isJsonContentType(contentType) ? JSON.parse(res.text) : res.text
 
-    const violations = findResponseViolations(body, operation)
+    const violations = findResponseViolations(body, operation, contentType)
     if (violations.length === 0) return
 
     throw new Error(
         [
             `${operation.method.toUpperCase()} ${operation.path} のレスポンスが spec と一致しません:`,
             ...violations.map((v) => `  - ${v}`),
+            `Content-Type: ${contentType ?? '(なし)'}`,
             '実際のレスポンス:',
-            JSON.stringify(body, null, 2),
+            typeof body === 'string' ? body : JSON.stringify(body, null, 2),
         ].join('\n'),
     )
 }

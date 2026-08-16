@@ -420,9 +420,11 @@ tests/                       # 契約テスト（DB・Firebaseには接続しな
 │   ├── testApp.ts          # createApp() + 依存のモック + リクエスト検証
 │   ├── prismaMock.ts       # PrismaClient のモック
 │   ├── responseValidator.ts # 実レスポンスを spec のスキーマで検証
-│   └── assert.ts           # expectApiResponse などのアサーション
+│   ├── assert.ts           # expectApiResponse などのアサーション
+│   └── coverage.ts         # 実行されたオペレーションの記録
 ├── mocks/                  # Firebase / logger の差し替え
 ├── fixtures/               # Prisma の行を模したテストデータ
+├── globalTeardown.ts       # spec の全オペレーションが検証されたかの確認
 └── *.test.ts               # リソース別のテスト
 ```
 
@@ -524,7 +526,8 @@ lint のルールセットは `redocly.yaml` で調整しています。
 主キーを文字列化しており、検証時点ではまだ `BigInt` のままなので、spec が正しくても
 `must be string` と誤検知します。実際に HTTP で流れたボディをパースして検証する必要があります。
 
-`tests/specCoverage.test.ts` が「spec の全オペレーションにテストがあるか」を確認するため、
-エンドポイントを追加してテストを書き忘れると失敗します。
+エンドポイントを追加してテストを書き忘れると失敗します。網羅性は「実際に実行されたテスト」を
+根拠に判定するため（`tests/globalTeardown.ts`）、`it.skip` やコメントアウトでも検知されます。
+一部のテストだけを実行したい場合は `SKIP_SPEC_COVERAGE_CHECK=1 npm test` を使ってください。
 
 バリデーションと OpenAPI 定義を zod へ一本化し、乖離を構造的に防ぐ案は issue #83 で検討中です。

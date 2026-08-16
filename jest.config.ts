@@ -30,6 +30,11 @@ const config: Config = {
         '^(.*)/config/logger$': '<rootDir>/tests/mocks/logger.ts',
     },
 
+    // spec の全オペレーションが「実際に実行されたテスト」で検証されたかを、
+    // 全ファイルの実行後に突き合わせる（テストファイル同士の実行順は保証されないため）。
+    globalSetup: '<rootDir>/tests/globalSetup.ts',
+    globalTeardown: '<rootDir>/tests/globalTeardown.ts',
+
     clearMocks: true,
     // 想定外の非同期処理が残っていないことを検知する
     detectOpenHandles: true,
