@@ -190,6 +190,11 @@ describe('リクエスト検証', () => {
             ['小数', 1.5],
             ['整数でない文字列', 'abc'],
             ['真偽値', true],
+            // 文字列化すると整数に読める値。number でも string でもないため union の時点で
+            // 落ちるが、メッセージまで整数エラーへ倒せているかを見る（zod の既定文言は英語）
+            ['整数に読める要素1件の配列', [5]],
+            ['要素が複数の配列', [1, 2]],
+            ['オブジェクト', { value: 5 }],
         ])('%s は弾く', async (_name, value) => {
             const app = createValidationApp({ body: storeIdParamSchema })
 

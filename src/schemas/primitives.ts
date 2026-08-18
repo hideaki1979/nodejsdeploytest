@@ -137,9 +137,19 @@ function isSafeIntegerValue(value: unknown): boolean {
  * そのため文字列のまま Prisma へ渡り、実行時エラー（500）になる経路が残っていた。
  * ここでは受理範囲を変えずに数値へ寄せる。
  */
-function integerLike(doc: FieldDoc, message: (value: unknown) => string | undefined) {
+function integerLike(
+    label: string,
+    doc: FieldDoc,
+    message: (value: unknown) => string | undefined,
+) {
+    // union が失敗した時点で number でも string でもないため必ずエラーだが、
+    // 文字列化すると整数に読める値（例: [5] → '5'）では message が undefined を返す。
+    // zod は error コールバックが undefined を返すと既定メッセージ（英語）へ倒すため、
+    // ここで整数エラーへ寄せて日本語のメッセージを保つ。
+    const notInteger = `${label}は整数で指定してください`
+
     return z
-        .union([z.number(), z.string()], { error: (issue) => message(issue.input) })
+        .union([z.number(), z.string()], { error: (issue) => message(issue.input) ?? notInteger })
         .superRefine((value, ctx) => {
             const error = message(value)
             if (error !== undefined) ctx.addIssue({ code: 'custom', message: error })
@@ -160,7 +170,7 @@ function integerMessage(label: string, value: unknown): string | undefined {
  * 空なら「必須です」、値はあるが整数でなければ「整数で指定してください」を返す。
  */
 export function requiredInteger(label: string, doc: FieldDoc) {
-    return integerLike(doc, (value) =>
+    return integerLike(label, doc, (value) =>
         isEmptyValue(value) ? `${label}は必須です` : integerMessage(label, value),
     )
 }
@@ -170,7 +180,7 @@ export function requiredInteger(label: string, doc: FieldDoc) {
  * 未指定でも「整数で指定してください」になるのが移行前の挙動。
  */
 export function integerOnly(label: string, doc: FieldDoc) {
-    return integerLike(doc, (value) => integerMessage(label, value))
+    return integerLike(label, doc, (value) => integerMessage(label, value))
 }
 
 /**
