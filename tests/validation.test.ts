@@ -96,6 +96,26 @@ describe('リクエスト検証', () => {
                 'topping_calls[0].topping_id': 'トッピングIDは整数で指定してください',
             })
         })
+
+        it('ログには生の入力値を残さない（レスポンスの details には残す）', async () => {
+            const app = createValidationApp({ body: userInputSchema })
+            const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => undefined)
+
+            try {
+                const res = await request(app).post('/').send({ email: 'not-an-email' })
+
+                expect(res.body.details[0]).toMatchObject({
+                    path: 'email',
+                    value: 'not-an-email',
+                })
+
+                const [logged] = errorSpy.mock.calls[0] as [{ errors: Record<string, unknown>[] }]
+                expect(logged.errors[0]).toMatchObject({ path: 'email', location: 'body' })
+                expect(logged.errors[0]).not.toHaveProperty('value')
+            } finally {
+                errorSpy.mockRestore()
+            }
+        })
     })
 
     describe('必須テキスト項目（店舗名）', () => {

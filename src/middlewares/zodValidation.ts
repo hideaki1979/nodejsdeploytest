@@ -105,8 +105,15 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
 
         if (errors.length > 0) {
             const logger = container.resolve<Logger>(pinoLogger)
-            // ログは原因調査のため全件残す（絞り込みはレスポンスのみ）
-            logger.error({ errors, path: req.originalUrl }, 'バリデーションエラーが発生しました。')
+            // ログは原因調査のため全件残す（絞り込みはレスポンスのみ）。
+            // ただし value は落とす。メールアドレスやプロフィールがそのまま
+            // ログに残るのを避けるため（logger.ts で認証ヘッダをマスクしているのと同じ理由）。
+            // どの項目がどのルールで落ちたかは path / msg / location で追える。
+            // レスポンスの details は移行前の形を保つため value を含めたままにする。
+            logger.error(
+                { errors: errors.map(({ value: _value, ...rest }) => rest), path: req.originalUrl },
+                'バリデーションエラーが発生しました。',
+            )
             res.status(400).json({
                 success: false,
                 error: 'バリデーションエラー発生：入力値に誤りがあります。',
