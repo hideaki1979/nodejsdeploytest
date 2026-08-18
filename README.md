@@ -49,7 +49,7 @@ J.Navi API は、二郎系ラーメン愛好家のための専門的な店舗情
 
 ### 🛡️ セキュリティ機能
 
-- **入力バリデーション**: express-validator による型安全なバリデーション
+- **入力バリデーション**: zod スキーマによる型安全なバリデーション（OpenAPI spec と同じ定義から導出）
 - **認証ガード**: Firebase Authentication による認証
 - **エラーハンドリング**: 専用エラーハンドリングミドルウェア
 - **型安全性**: TypeScript Strict Mode による実行時エラー削減
@@ -67,7 +67,7 @@ J.Navi API は、二郎系ラーメン愛好家のための専門的な店舗情
 | **ORM**                  | Prisma                                                                                                                                                     | 7.9.1       | データベース操作・マイグレーション |
 | **認証・ストレージ**     | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/firebase/firebase-plain.svg" width="20" height="20" alt="Firebase Logo"/> Firebase            | 14.2.0      | 認証・ファイルストレージ           |
 | **HTTP クライアント**    | <img src="https://axios-http.com/assets/favicon.ico" width="20" height="20" alt="Axios Logo"/> Axios                                                       | 1.8.1       | API 通信                           |
-| **バリデーション**       | express-validator                                                                                                                                          | 7.2.1       | 入力値バリデーション               |
+| **バリデーション**       | zod / @asteasolutions/zod-to-openapi                                                                                                                       | 4.4.3 / 9.1.0 | 入力値バリデーションと OpenAPI spec の生成 |
 | **DI コンテナ**          | tsyringe                                                                                                                                                   | 4.10.0      | 依存性注入                         |
 | **ログ**                 | pino                                                                                                                                                       | 9.7.0       | 高性能ログライブラリ               |
 | **セキュリティ**         | helmet                                                                                                                                                     | 8.1.0       | セキュリティヘッダー設定           |
@@ -392,10 +392,18 @@ src/
 ├── middlewares/             # ミドルウェア
 │   ├── authMiddleware.ts   # 認証ミドルウェア
 │   ├── errorMiddleware.ts  # エラーハンドリング
-│   ├── validation.ts       # バリデーション
-│   ├── imageValidation.ts  # 画像バリデーション
-│   └── userValidation.ts   # ユーザーバリデーション
-├── types/                   # 型定義
+│   └── zodValidation.ts    # zod スキーマによるリクエスト検証
+├── schemas/                 # zod スキーマ（検証と OpenAPI spec の単一の正）
+│   ├── primitives.ts       # 項目の検証部品（必須テキスト・整数など）
+│   ├── common.schema.ts    # 共通のエラー表現・成功レスポンスの封筒
+│   ├── store.schema.ts     # 店舗・マップのスキーマ
+│   ├── image.schema.ts     # 店舗画像のスキーマ
+│   ├── topping.schema.ts   # トッピング・コールオプションのスキーマ
+│   └── user.schema.ts      # ユーザーのスキーマ
+├── openapi/                 # OpenAPI 生成基盤
+│   ├── zod.ts              # .openapi() 拡張済みの zod
+│   └── registry.ts         # コンポーネント・オペレーションのレジストリ
+├── types/                   # 型定義（スキーマからの導出と Prisma 由来のもの）
 │   ├── store.ts            # 店舗関連型
 │   ├── image.ts            # 画像関連型
 │   ├── user.ts             # ユーザー関連型
@@ -413,7 +421,8 @@ src/
 
 scripts/                     # 開発・CI 用スクリプト（アプリ本体には含まれない）
 ├── tsconfig.json            # エディタ用の型設定
-├── generate-openapi.ts      # swagger-jsdoc の spec を openapi.json へ出力
+├── specEnv.ts               # spec 生成前の環境変数・Firebase の無害化
+├── generate-openapi.ts      # zod から生成した spec を openapi.json へ出力
 ├── collectExpressRoutes.ts  # Express の実ルート一覧を収集
 └── check-openapi-routes.ts  # spec と実ルートの突き合わせ
 
@@ -425,6 +434,7 @@ tests/                       # 契約テスト（DB・Firebaseには接続しな
 │   ├── assert.ts           # expectApiResponse などのアサーション
 │   ├── coverage.ts         # 実行されたオペレーションの記録
 │   ├── specOperations.ts   # spec のオペレーション一覧
+│   ├── specBootstrap.ts    # globalTeardown から spec を読むための差し替え
 │   ├── env.ts              # テスト用の環境変数（setupFiles で実行）
 │   └── auth.ts             # 認証ヘッダとテストユーザーID
 ├── mocks/                  # Firebase / logger の差し替え
@@ -438,7 +448,7 @@ tests/                       # 契約テスト（DB・Firebaseには接続しな
 ## セキュリティ機能
 
 - 🛡️ **型安全性**: TypeScript Strict Mode による実行時エラー削減
-- ✅ **入力バリデーション**: express-validator による型安全なバリデーション
+- ✅ **入力バリデーション**: zod スキーマによる型安全なバリデーション
 - 🔐 **認証ガード**: Firebase Authentication + ID Token 検証
 - 🚫 **XSS 対策**: Helmet によるセキュリティヘッダー設定
 - 📝 **エラーハンドリング**: 専用エラーハンドリングミドルウェア
@@ -488,16 +498,23 @@ tests/                       # 契約テスト（DB・Firebaseには接続しな
 
 ### 実装との乖離の検知
 
-API 仕様は `src/routes/*.ts` と `src/types/*.ts` の `@swagger` JSDoc が唯一の正で、
-`swagger-jsdoc` がそれを OpenAPI spec に組み立てています。
-JSDoc は実装と別物なので、実装だけ変えて JSDoc を直し忘れると静かに乖離します
-（実際に一度 17 オペレーション中 15 件が乖離しました。issue #72）。
+API 仕様は `src/schemas/*.schema.ts` の zod スキーマと `src/routes/*.ts` の
+`registry.registerPath()` が唯一の正で、`@asteasolutions/zod-to-openapi` が
+それを OpenAPI spec に組み立てています。
 
-そのため CI（`.github/workflows/openapi.yml`）で以下を回しています。ローカルでは `npm run openapi:check` で同じ検証を実行できます。
+以前は `@swagger` JSDoc が spec の正でしたが、リクエストの検証（express-validator）とは
+別物だったため、実装だけ変えて JSDoc を直し忘れると静かに乖離しました
+（実際に一度 17 オペレーション中 15 件が乖離しました。issue #72）。
+現在は同じ zod スキーマから検証と spec の両方を導いているため、
+スキーマを直せば両方が同時に変わります（issue #83）。
+
+ただしルートの登録漏れやレスポンス構造の食い違いはそれだけでは防げないため、
+引き続き CI（`.github/workflows/openapi.yml`）で以下を回しています。
+ローカルでは `npm run openapi:check` で同じ検証を実行できます。
 
 | コマンド | 検証内容 |
 | --- | --- |
-| `npm run openapi:generate` | JSDoc から `openapi.json` を生成（git 管理外） |
+| `npm run openapi:generate` | zod スキーマから `openapi.json` を生成（git 管理外） |
 | `npm run openapi:lint` | `@redocly/cli` による spec の lint。`$ref` 切れ、未使用スキーマ、`summary` 欠落などを検出 |
 | `npm run openapi:check-routes` | spec の `paths` と Express が実際にマウントしているルートを突き合わせ、片側にしか存在しないオペレーションを検出 |
 | `npm test` | 契約テスト。実レスポンス・実リクエストを spec のスキーマで検証 |

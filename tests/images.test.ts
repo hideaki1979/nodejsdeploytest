@@ -4,7 +4,7 @@ import { AUTH_HEADER, TEST_USER_ID } from './helpers/auth'
 import { createTestApp } from './helpers/testApp'
 import { imageRow } from './fixtures/prismaRows'
 
-/** 1x1 の PNG。imageValidation.ts が data URL 形式であることを検証する */
+/** 1x1 の PNG。image.schema.ts が data URL 形式であることを検証する */
 const IMAGE_BASE64 =
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAAAAAA6fptVAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg=='
 

@@ -3,6 +3,8 @@ import { mapRouter, storeRouter } from "./store.routes";
 import { imageRouter } from "./image.routes";
 import { callOptionRouter, toppingRouter } from "./topping.routes";
 import { userRouter } from "./user.routes";
+import { registry } from "../openapi/registry";
+import { z } from "../openapi/zod";
 
 /**
  * Express Routerのインスタンスを作成
@@ -15,26 +17,27 @@ const router = Router();
  * クライアントに基本的なウェルカムメッセージを返す
  * CI/CD動作確認用の表示も含む
  */
-
-/**
- * @swagger
- * /:
- *   get:
- *     tags:
- *       - System
- *     summary: ルートエンドポイント
- *     description: デプロイの疎通確認用にウェルカムメッセージを返します。認証は不要です。
- *     security: []
- *     responses:
- *       '200':
- *         description: 正常に応答しました。
- *         content:
- *           text/html:
- *             schema:
- *               type: string
- *               example: Hello World!!! This is a autodeployshitekure!!! for CI/CD
- */
-router.get('/', (req, res) => {
+registry.registerPath({
+    method: 'get',
+    path: '/',
+    tags: ['System'],
+    summary: 'ルートエンドポイント',
+    description: 'デプロイの疎通確認用にウェルカムメッセージを返します。認証は不要です。',
+    security: [],
+    responses: {
+        200: {
+            description: '正常に応答しました。',
+            content: {
+                'text/html': {
+                    schema: z.string().openapi({
+                        example: 'Hello World!!! This is a autodeployshitekure!!! for CI/CD',
+                    }),
+                },
+            },
+        },
+    },
+})
+router.get('/', (_req, res) => {
     res.send("Hello World!!! This is a autodeployshitekure!!! for CI/CD")
 })
 
@@ -42,26 +45,23 @@ router.get('/', (req, res) => {
  * ヘルスチェック用エンドポイント
  * APIの稼働状態を確認するために使用
  */
-
-/**
- * @swagger
- * /health:
- *   get:
- *     tags:
- *       - System
- *     summary: ヘルスチェック
- *     description: APIの稼働状態を確認します。認証は不要です。
- *     security: []
- *     responses:
- *       '200':
- *         description: APIは正常に稼働しています。
- *         content:
- *           text/html:
- *             schema:
- *               type: string
- *               example: API is working fine
- */
-router.get('/health', (req, res) => {
+registry.registerPath({
+    method: 'get',
+    path: '/health',
+    tags: ['System'],
+    summary: 'ヘルスチェック',
+    description: 'APIの稼働状態を確認します。認証は不要です。',
+    security: [],
+    responses: {
+        200: {
+            description: 'APIは正常に稼働しています。',
+            content: {
+                'text/html': { schema: z.string().openapi({ example: 'API is working fine' }) },
+            },
+        },
+    },
+})
+router.get('/health', (_req, res) => {
     res.send("API is working fine")
 })
 

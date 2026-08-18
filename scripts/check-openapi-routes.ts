@@ -1,5 +1,5 @@
 /**
- * OpenAPI spec（@swagger JSDoc から生成）と、Express が実際にマウントしている
+ * OpenAPI spec（zod スキーマから生成）と、Express が実際にマウントしている
  * ルート一覧を突き合わせ、片側にしか存在しないオペレーションを検出する。
  *
  * #72 で見つかった「ドキュメントのパスが存在しない」（/map, /call-options）と
@@ -8,7 +8,6 @@
  * 使い方: npm run openapi:check-routes
  */
 import { collectExpressRoutes, type ExpressRoute } from './collectExpressRoutes'
-import { swaggerSpec } from '../src/config/swagger'
 
 /**
  * OpenAPI 3.0 の Path Item Object がオペレーションとして定義しているキー。
@@ -67,12 +66,21 @@ function findUnsupportedMethods(routes: ExpressRoute[]): ExpressRoute[] {
     return routes.filter((route) => !OPENAPI_OPERATION_METHODS.has(route.method))
 }
 
+/**
+ * spec を読み込む。
+ *
+ * spec の生成はルート定義の require を伴うため、collectExpressRoutes() が
+ * express.Router を差し替えるより先に読み込んではならない
+ * （先に読み込むと routes が require キャッシュに載り、ルートを1件も拾えなくなる）。
+ * import 文は巻き上げられて実行順を選べないため、ここで動的に読み込む。
+ */
 function collectSpecOperations(): Operation[] {
-    const paths = (swaggerSpec as { paths?: Record<string, Record<string, unknown>> }).paths ?? {}
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { swaggerSpec } = require('../src/config/swagger') as typeof import('../src/config/swagger')
     const operations: Operation[] = []
 
-    for (const [specPath, pathItem] of Object.entries(paths)) {
-        for (const key of Object.keys(pathItem)) {
+    for (const [specPath, pathItem] of Object.entries(swaggerSpec.paths ?? {})) {
+        for (const key of Object.keys(pathItem as object)) {
             const method = key.toLowerCase()
             if (!OPENAPI_OPERATION_METHODS.has(method)) continue
             operations.push({ method, path: specPath })
@@ -142,7 +150,7 @@ function main(): void {
     }
 
     console.error(
-        '\nルート定義（src/routes/*.ts）か @swagger JSDoc のどちらかを修正してください。',
+        '\nルート定義（src/routes/*.ts）の Express への登録か registry.registerPath のどちらかを修正してください。',
     )
     process.exitCode = 1
 }

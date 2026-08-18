@@ -80,7 +80,7 @@ describe('Errors', () => {
         const { app } = createTestApp()
 
         // 型としては spec を満たすため OpenAPI バリデータは通過し、
-        // 実装側の express-validator（handleValidationErrors）が 400 を返す経路になる。
+        // 実装側の検証ミドルウェア（zodValidation）が 400 を返す経路になる。
         // 型で弾かれる値を送ると spec の ValidationError.details を検証できない。
         const res = await request(app)
             .post('/stores')

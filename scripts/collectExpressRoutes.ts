@@ -8,13 +8,13 @@
  *
  * ルート定義ファイルは controller → service と芋づるに import されるため、
  * import 時に副作用を持つモジュール（Firebase 初期化）と
- * 必須の環境変数は、収集前にスタブ／既定値で埋めておく。
+ * 必須の環境変数は、収集前に scripts/specEnv.ts でスタブ／既定値へ倒しておく。
  */
 // controller / service は tsyringe のデコレータを使うため、
 // それらを import するより先にポリフィルを読み込む必要がある（src/app.ts と同じ理由）。
 import 'reflect-metadata'
 import express from 'express'
-import path from 'node:path'
+import { bootstrapSpecEnv } from './specEnv'
 
 export interface ExpressRoute {
     /** 小文字のHTTPメソッド名（`all` で登録された場合は 'all'） */
@@ -35,46 +35,6 @@ interface RouterRecord {
  * これ以外は全て HTTP メソッドとして扱う（router パッケージのメソッド一覧に追随するため）。
  */
 const NON_HTTP_ROUTE_MEMBERS = new Set(['constructor', 'dispatch', '_handlesMethod', '_methods'])
-
-/**
- * config.ts は import 時に必須の環境変数を検証するため、未設定なら仮の値で埋める。
- * ここで注入する値は一切使われない（DBにもFirebaseにも接続しない）。
- */
-const ENV_FALLBACKS: Record<string, string> = {
-    DATABASE_URL: 'postgresql://openapi-check:openapi-check@127.0.0.1:5432/openapi-check',
-    FIREBASE_STORAGE_BUCKET: 'openapi-check.appspot.com',
-    FIREBASE_CONFIG: '{}',
-    GOOGLE_APPLICATION_CREDENTIALS: 'openapi-check.json',
-    GOOGLE_MAPS_API_KEY: 'openapi-check',
-    CORS_ALLOWED_ORIGINS: 'http://localhost:3000',
-    PRISMA_TRANSACTION_MAX_WAIT: '10000',
-    PRISMA_TRANSACTION_TIMEOUT: '60000',
-}
-
-function applyEnvFallbacks(): void {
-    for (const [key, value] of Object.entries(ENV_FALLBACKS)) {
-        if (!process.env[key]) process.env[key] = value
-    }
-}
-
-/**
- * config/firebase.ts は import しただけで認証情報を読みに行くため、
- * require キャッシュへ空のモジュールを先に差し込んで実行を回避する。
- */
-function stubFirebaseModule(): void {
-    const firebasePath = require.resolve('../src/config/firebase')
-    if (require.cache[firebasePath]) return
-
-    require.cache[firebasePath] = {
-        id: firebasePath,
-        filename: firebasePath,
-        path: path.dirname(firebasePath),
-        loaded: true,
-        children: [],
-        paths: [],
-        exports: { auth: {}, bucket: {} },
-    } as unknown as NodeModule
-}
 
 /**
  * Route インスタンスのHTTPメソッドを差し替え、呼ばれたメソッド名を記録する。
@@ -173,8 +133,7 @@ let cachedRoutes: ExpressRoute[] | undefined
 export function collectExpressRoutes(): ExpressRoute[] {
     if (cachedRoutes) return [...cachedRoutes]
 
-    applyEnvFallbacks()
-    stubFirebaseModule()
+    bootstrapSpecEnv()
 
     const records = new Map<object, RouterRecord>()
     const originalRouterFactory = express.Router

@@ -90,7 +90,7 @@ const MAX_REF_DEPTH = 5
  * `$ref: '#/components/responses/StoreNotFound'` のような
  * spec 内部への参照を辿り、実体のレスポンスオブジェクトへ解決する。
  *
- * swagger-jsdoc は $ref を展開しないため、辿らないと
+ * spec は $ref を展開しないまま出力されるため、辿らないと
  * 「content が無い＝本文なしのレスポンス」と誤認してしまう。
  */
 function resolveRefs(response: Record<string, unknown>, pointer: string[]): ResolvedResponse {
@@ -126,7 +126,7 @@ function resolveRefs(response: Record<string, unknown>, pointer: string[]): Reso
 
 /** spec 上の当該レスポンス（responses[status]）を取り出す */
 function getResponseObject(operation: OperationRef): ResolvedResponse {
-    const paths = (swaggerSpec as { paths?: Record<string, Record<string, unknown>> }).paths ?? {}
+    const paths = swaggerSpec.paths ?? {}
     const pathItem = paths[operation.path] as Record<string, unknown> | undefined
     const method = operation.method.toLowerCase()
     const operationObject = pathItem?.[method] as
