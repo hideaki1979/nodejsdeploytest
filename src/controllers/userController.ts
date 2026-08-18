@@ -5,6 +5,7 @@ import { autoInjectable, inject } from "tsyringe";
 import { pinoLogger } from "../di.token";
 import { Logger } from "pino";
 import { getAuthenticatedUserid, isAdminUser } from "../utils/auth";
+import { pathWithoutQuery } from "../utils/requestPath";
 
 @autoInjectable()
 export class UserController {
@@ -33,7 +34,8 @@ export class UserController {
         if (!uid) {
             this.logger?.error({
                 error: new Error('認証トークンID未設定エラー'),
-                endpoint: req.originalUrl
+                // クエリ文字列は落とす（クライアントが任意の内容を載せられるため）
+                endpoint: pathWithoutQuery(req)
             }, '認証トークンIDが設定されてません')
             throw new AppError('認証トークンIDが設定されてません', 401)
         }

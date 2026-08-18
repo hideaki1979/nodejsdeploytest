@@ -3,6 +3,7 @@ import { Logger } from 'pino'
 import { container } from 'tsyringe'
 import { pinoLogger } from '../di.token'
 import { z } from '../openapi/zod'
+import { pathWithoutQuery } from '../utils/requestPath'
 
 /**
  * zod スキーマでリクエストを検証するミドルウェア。
@@ -110,8 +111,14 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
             // ログに残るのを避けるため（logger.ts で認証ヘッダをマスクしているのと同じ理由）。
             // どの項目がどのルールで落ちたかは path / msg / location で追える。
             // レスポンスの details は移行前の形を保つため value を含めたままにする。
+            //
+            // path もクエリ文字列を落とす。このミドルウェアはクエリを検証しておらず
+            // （上記のとおり扱わない）調査に使わないため、残す理由がない。
             logger.error(
-                { errors: errors.map(({ value: _value, ...rest }) => rest), path: req.originalUrl },
+                {
+                    errors: errors.map(({ value: _value, ...rest }) => rest),
+                    path: pathWithoutQuery(req),
+                },
                 'バリデーションエラーが発生しました。',
             )
             res.status(400).json({

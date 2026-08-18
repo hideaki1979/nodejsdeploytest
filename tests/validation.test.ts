@@ -116,6 +116,32 @@ describe('リクエスト検証', () => {
                 errorSpy.mockRestore()
             }
         })
+
+        it('ログの path はクエリを含まず、マウント先のプレフィックスを保つ', async () => {
+            // req.path はサブルーターのマウント位置からの相対パスになるため使えない
+            // （routes.ts の router.use('/stores', ...) 相当の構成で確かめる）
+            container.reset()
+            container.register(pinoLogger, { useValue: logger })
+            const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => undefined)
+
+            const storeRouter = express.Router()
+            storeRouter.post('/:id', validate({ params: storeIdParamSchema }), (_req, res) => {
+                res.status(200).end()
+            })
+            const app = express()
+            app.use(express.json())
+            app.use('/stores', storeRouter)
+
+            try {
+                const res = await request(app).post('/stores/abc?token=secret')
+
+                expect(res.status).toBe(400)
+                const [logged] = errorSpy.mock.calls[0] as [{ path: string }]
+                expect(logged.path).toBe('/stores/abc')
+            } finally {
+                errorSpy.mockRestore()
+            }
+        })
     })
 
     describe('必須テキスト項目（店舗名）', () => {
