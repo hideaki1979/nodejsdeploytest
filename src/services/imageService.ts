@@ -32,15 +32,19 @@ export class ImageService {
     /**
    * 店舗画像とそれに関連するトッピング情報を登録する
    * 画像はBase64形式でエンコードされている必要がある
+   *
+   * 保存先の店舗は更新・削除と同じくパスパラメータのstoreIdを唯一の正とする。
+   * ボディからも受け取ると、URLが示す店舗と実際の書き込み先が食い違いうる
+   * @param storeId 店舗ID（パスパラメータ）
    * @param data 店舗画像のアップロードデータ
    * @param userId 投稿者のFirebase UID（検証済みトークン由来）
    * @returns 作成された画像エントリ
    */
-    async createImage(data: StoreImageUploadData, userId: string) {
+    async createImage(storeId: string | number, data: StoreImageUploadData, userId: string) {
         // StorageへのアップロードはネットワークI/OのためDBトランザクションの外で行う。
         // トランザクション内で実行すると、アップロードの所要時間だけDB接続とロックを占有し、
         // PRISMA_TRANSACTION_TIMEOUT超過でロールバックする可能性がある
-        const uploadedUrl = await this.uploadImageToStorage(data.image_base64, data.store_id)
+        const uploadedUrl = await this.uploadImageToStorage(data.image_base64, storeId)
 
         try {
             // トランザクションで処理することで、データの整合性を担保
@@ -48,7 +52,7 @@ export class ImageService {
                 // データベースに画像情報を保存
                 const image = await tx.image.create({
                     data: {
-                        store_id: BigInt(data.store_id),
+                        store_id: BigInt(storeId),
                         user_id: userId,
                         menu_type: data.menu_type,
                         menu_name: data.menu_name,

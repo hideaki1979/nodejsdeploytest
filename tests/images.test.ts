@@ -1,8 +1,9 @@
 import request from 'supertest'
-import { expectApiResponse } from './helpers/assert'
+import { expectApiResponse, expectStatus } from './helpers/assert'
 import { AUTH_HEADER, TEST_USER_ID } from './helpers/auth'
 import { createTestApp } from './helpers/testApp'
 import { imageRow } from './fixtures/prismaRows'
+import { bucket } from './mocks/firebase'
 
 /** 1x1 の PNG。image.schema.ts が data URL 形式であることを検証する */
 const IMAGE_BASE64 =
@@ -75,7 +76,6 @@ describe('Images', () => {
             .post('/stores/1/images')
             .set('Authorization', AUTH_HEADER)
             .send({
-                store_id: 1,
                 menu_type: 1,
                 menu_name: '小ラーメン',
                 image_base64: IMAGE_BASE64,
@@ -83,6 +83,29 @@ describe('Images', () => {
             })
 
         expectApiResponse(res, { method: 'post', path: '/stores/{storeId}/images', status: 201 })
+    })
+
+    it('POST の作成先はパスの storeId で決まる（#91）', async () => {
+        const { app, prisma } = createTestApp()
+        prisma.image.create.mockResolvedValue({ ...imageRow, store_id: BigInt(2) })
+
+        const res = await request(app)
+            .post('/stores/2/images')
+            .set('Authorization', AUTH_HEADER)
+            .send({
+                menu_type: 1,
+                menu_name: '小ラーメン',
+                image_base64: IMAGE_BASE64,
+                // スキーマから外した項目。zod が落とすため作成先には影響しない
+                store_id: 1,
+            })
+
+        expectStatus(res, 201)
+        // DB のレコードも Storage の保存先も、URL が示す店舗になっていること
+        expect(prisma.image.create).toHaveBeenCalledWith(
+            expect.objectContaining({ data: expect.objectContaining({ store_id: BigInt(2) }) }),
+        )
+        expect(bucket.file).toHaveBeenCalledWith(expect.stringMatching(/^stores\/2\//))
     })
 
     it('PUT /stores/{storeId}/images/{imageId} が spec どおりに応答する', async () => {
@@ -97,7 +120,6 @@ describe('Images', () => {
             .put('/stores/1/images/100')
             .set('Authorization', AUTH_HEADER)
             .send({
-                store_id: 1,
                 menu_type: 1,
                 menu_name: '大ラーメン',
                 topping_selections: [{ topping_id: 1, call_option_id: 1, store_topping_call_id: 10 }],

@@ -221,14 +221,12 @@ describe('リクエスト検証', () => {
             const res = await request(app)
                 .post('/')
                 .send({
-                    store_id: '1',
                     menu_type: '2',
                     menu_name: '小ラーメン',
                     image_base64: 'data:image/png;base64,iVBORw0KGgo=',
                 })
 
             expect(res.status).toBe(200)
-            expect(res.body.body.store_id).toBe(1)
             expect(res.body.body.menu_type).toBe(2)
         })
 
@@ -300,7 +298,7 @@ describe('リクエスト検証', () => {
 
             const res = await request(app)
                 .post('/')
-                .send({ store_id: 1, menu_type: 1, menu_name: '小ラーメン' })
+                .send({ menu_type: 1, menu_name: '小ラーメン' })
 
             expect(messagesOf(res.body).image_base64).toBe('画像データは必須です')
         })
@@ -310,7 +308,7 @@ describe('リクエスト検証', () => {
 
             const res = await request(app)
                 .post('/')
-                .send({ store_id: 1, menu_type: 1, menu_name: '小ラーメン', image_base64: 'not-an-image' })
+                .send({ menu_type: 1, menu_name: '小ラーメン', image_base64: 'not-an-image' })
 
             expect(messagesOf(res.body).image_base64).toBe(
                 '無効な画像形式です。Base64エンコードされたJPEG、PNG、GIF、WEBPのみ対応しています',
@@ -322,7 +320,7 @@ describe('リクエスト検証', () => {
 
             const res = await request(app)
                 .post('/')
-                .send({ store_id: 1, menu_type: 1, menu_name: '大ラーメン' })
+                .send({ menu_type: 1, menu_name: '大ラーメン' })
 
             expect(res.status).toBe(200)
             expect(res.body.body.image_base64).toBeUndefined()
@@ -332,7 +330,6 @@ describe('リクエスト検証', () => {
             const app = createValidationApp({ body: imageUploadInputSchema })
 
             const res = await request(app).post('/').send({
-                store_id: 1,
                 menu_type: 1,
                 menu_name: '小ラーメン',
                 image_base64: 'data:image/svg+xml;base64,PHN2Zy8+',
@@ -420,19 +417,18 @@ describe('リクエスト検証', () => {
         it('数値化すると精度が落ちる整数を弾く', async () => {
             const app = createValidationApp({ body: imageUploadInputSchema })
 
-            // 移行前は文字列のまま Prisma へ渡っていたため BigInt として正しく扱えたが、
-            // 数値へ寄せる以上 2^53 を超える値は別のIDへ化ける。黙って丸めずエラーにする
+            // 移行前は文字列のまま Prisma へ渡っていたため元の値を保てたが、
+            // 数値へ寄せる以上 2^53 を超える値は別の値へ化ける。黙って丸めずエラーにする
             const res = await request(app)
                 .post('/')
                 .send({
-                    store_id: '9007199254740993',
-                    menu_type: 1,
+                    menu_type: '9007199254740993',
                     menu_name: '小ラーメン',
                     image_base64: 'data:image/png;base64,iVBORw0KGgo=',
                 })
 
             expect(res.status).toBe(400)
-            expect(messagesOf(res.body).store_id).toBe('店舗IDは扱える整数の範囲を超えています')
+            expect(messagesOf(res.body).menu_type).toBe('メニュータイプは扱える整数の範囲を超えています')
         })
 
         it('整数項目に配列を渡すと弾く', async () => {
@@ -443,14 +439,13 @@ describe('リクエスト検証', () => {
             const res = await request(app)
                 .post('/')
                 .send({
-                    store_id: [],
-                    menu_type: 1,
+                    menu_type: [],
                     menu_name: '小ラーメン',
                     image_base64: 'data:image/png;base64,iVBORw0KGgo=',
                 })
 
             expect(res.status).toBe(400)
-            expect(messagesOf(res.body).store_id).toBe('店舗IDは必須です')
+            expect(messagesOf(res.body).menu_type).toBe('メニュータイプは必須です')
         })
     })
 
