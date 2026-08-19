@@ -25,10 +25,13 @@ export class ImageController {
         // 投稿者IDはリクエストボディではなく検証済みトークンから取得する（なりすまし防止）
         const userId = getAuthenticatedUserid(req)
 
+        // 保存先の店舗はパスパラメータを正とする（更新・削除と同じ扱い）
+        const storeId = req.params.storeId
+
         const imageData: StoreImageUploadData = req.body
 
         // サービスを呼び出して画像アップロードを実行
-        const result = await this.imageService.createImage(imageData, userId)
+        const result = await this.imageService.createImage(storeId, imageData, userId)
 
         // 正常終了レスポンスをリターン
         res.status(201).json({

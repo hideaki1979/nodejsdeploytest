@@ -40,9 +40,13 @@ export const imageToppingSelectionSchema = registry.register(
         .openapi({ description: '画像に紐づけるトッピングコールの選択内容' }),
 )
 
-/** アップロードと更新で共通の項目 */
+/**
+ * アップロードと更新で共通の項目。
+ *
+ * 店舗IDはパスパラメータ（/stores/{storeId}/images）を唯一の正とするため、
+ * ボディでは受け取らない。ボディにも持たせるとURLと保存先が食い違いうる
+ */
 const commonImageFields = {
-    store_id: requiredInteger('店舗ID', { description: '店舗ID' }),
     menu_type: requiredInteger('メニュータイプ', { description: 'メニュータイプ' }),
     menu_name: requiredPlainText('メニュー名', { description: 'メニュー名' }),
 }
