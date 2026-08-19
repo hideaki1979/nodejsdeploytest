@@ -79,6 +79,24 @@ describe('Stores', () => {
         expect(prisma.store.findUnique).not.toHaveBeenCalled()
     })
 
+    // #92: 絞り込み値の誤りもパスパラメータと同じく validate が 400 で返す。
+    // 整数ではあるため spec の型検証は通り、範囲の判定はスキーマ側が担う
+    it('GET /stores/{id}/toppingcalls は数値化すると別IDへ化ける絞り込みIDを弾く', async () => {
+        const { app, prisma } = createTestApp()
+
+        const res = await request(app)
+            .get('/stores/1/toppingcalls')
+            .query({ topping_id: '9007199254740993' })
+
+        expectApiResponse(res, { method: 'get', path: '/stores/{id}/toppingcalls', status: 400 })
+        expect(res.body.details[0]).toMatchObject({
+            location: 'query',
+            path: 'topping_id',
+            msg: 'トッピングIDは扱える整数の範囲を超えています',
+        })
+        expect(prisma.store.findUnique).not.toHaveBeenCalled()
+    })
+
     it('GET /maps が spec どおりに応答する', async () => {
         const { app, prisma } = createTestApp()
         prisma.map.findMany.mockResolvedValue([mapRow])

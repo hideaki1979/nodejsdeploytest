@@ -161,9 +161,8 @@ registry.registerPath({
         'クエリパラメータを指定すると、対象の店舗別トッピングコールを絞り込めます。認証は不要です。',
     ].join(''),
     security: [],
-    // クエリは validate に渡さない（絞り込み条件は「解釈できない値は無視する」扱いのため、
-    // 400 に倒すミドルウェアを噛ませると挙動が変わる）。ここでは受け付ける形だけを宣言する。
-    // パスパラメータは他の :id ルートと同じく validate で検証する。
+    // パスパラメータもクエリも同じスキーマで validate が検証する。
+    // 絞り込み条件を満たさない値は 400 に倒す（移行前は黙って無視していた）。
     request: { params: storeIdParamSchema, query: storeToppingCallsQuerySchema },
     responses: {
         200: {
@@ -177,14 +176,12 @@ registry.registerPath({
                 },
             },
         },
-        // 400 は2経路ある。パスパラメータは validate が details つきで返し、
-        // call_timing の値違反は storeController が {success, error} を返す。
-        // ValidationError は details を必須にしていないため、どちらもこの形で表せる。
+        // 400 は validate の1経路のみ（パスパラメータ・クエリとも details つきで返す）
         400: responseRef('ValidationError'),
         404: responseRef('StoreNotFound'),
     },
 })
-storeRouter.get('/:id/toppingcalls', validate({ params: storeIdParamSchema }), createHandler(StoreController, 'getStoreToppingCalls'))
+storeRouter.get('/:id/toppingcalls', validate({ params: storeIdParamSchema, query: storeToppingCallsQuerySchema }), createHandler(StoreController, 'getStoreToppingCalls'))
 
 registry.registerPath({
     method: 'get',

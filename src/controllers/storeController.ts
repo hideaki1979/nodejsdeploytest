@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { StoreService } from "../services/storeService";
 import { FormattedToppingOptionNameStoreData, StoreToppingCallFilter } from "../types/store";
-import { AppError } from "../middlewares/errorMiddleware";
+import { storeToppingCallsQuerySchema } from "../schemas/store.schema";
 import { autoInjectable, inject } from "tsyringe";
 import { pinoLogger } from "../di.token";
 import { Logger } from "pino";
@@ -120,42 +120,18 @@ export class StoreController {
         // 乖離が生まれる（存在しない店舗はサービス層が 404 に倒す）
         const id = Number(req.params.id)
 
-        // フィルター条件をオブジェクトとして構築
-        const filters: StoreToppingCallFilter = {}
+        // クエリの解釈もルート層の validate と同じスキーマに任せる。
+        // 値違反は validate が details つきの 400 で返しており、ここへ届く時点で必ず成功する。
+        // Express 5 の req.query は書き戻せないため検証済みの値を受け取る手段が無く、
+        // 同じスキーマで読み直している（解釈を手書きすると validate と食い違いうる）
+        const query = storeToppingCallsQuerySchema.parse(req.query)
 
-        // クエリパラメータから各フィルター条件を取得
-        if (req.query.call_timing) {
-            const callTiming = req.query.call_timing as StoreToppingCallFilter['callTiming']
-
-            if (callTiming !== 'pre_call' && callTiming !== 'post_call' && callTiming !== 'all') {
-                throw new AppError('コールタイミングは pre_call または post_call または all を指定してください', 400)
-            }
-
-            filters.callTiming = callTiming
-        }
-
-        // トッピングIDのパラメータがある場合
-        if (req.query.topping_id) {
-            const toppingId = Number(req.query.topping_id)
-            if (!isNaN(toppingId)) {
-                filters.toppingId = toppingId
-            }
-        }
-
-        // コールオプションIDのパラメータがある場合
-        if (req.query.call_option_id) {
-            const optionId = Number(req.query.call_option_id)
-            if (!isNaN(optionId)) {
-                filters.call_option_id = optionId
-            }
-        }
-
-        // 麺種別IDのパラメータがある場合
-        if (req.query.noodleTypeId) {
-            const noodleTypeId = Number(req.query.noodleTypeId)
-            if (!isNaN(noodleTypeId)) {
-                filters.noodleTypeId = noodleTypeId
-            }
+        // フィルター条件をオブジェクトとして構築（未指定の項目は undefined）
+        const filters: StoreToppingCallFilter = {
+            callTiming: query.call_timing,
+            toppingId: query.topping_id,
+            call_option_id: query.call_option_id,
+            noodleTypeId: query.noodleTypeId,
         }
 
         // サービスクラスでコールタイミング該当するコールトッピング情報を取得する

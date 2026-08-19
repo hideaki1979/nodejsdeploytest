@@ -366,15 +366,18 @@ export class StoreService {
             callsWhereCondition.call_timing = filters.callTiming
         }
 
-        if (filters?.toppingId) {
+        // 未指定（undefined）のみ絞り込み条件から外す。
+        // falsy 判定にすると id=0 の指定が「絞り込み無し」に化け、
+        // 該当0件を返すべきリクエストに全件を返してしまう
+        if (filters?.toppingId !== undefined) {
             callsWhereCondition.topping_id = filters.toppingId
         }
 
-        if (filters?.call_option_id) {
+        if (filters?.call_option_id !== undefined) {
             callsWhereCondition.call_option_id = filters.call_option_id
         }
 
-        if (filters?.noodleTypeId) {
+        if (filters?.noodleTypeId !== undefined) {
             callsWhereCondition.noodle_type_id = filters.noodleTypeId
         }
 

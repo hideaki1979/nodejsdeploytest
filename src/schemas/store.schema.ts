@@ -12,6 +12,8 @@ import {
     integerOnly,
     optionalArray,
     optionalText,
+    queryEnum,
+    queryInteger,
     requiredInteger,
     requiredText,
 } from './primitives'
@@ -98,33 +100,38 @@ export const storeCloseInputSchema = z.object({
     storeName: requiredText('店舗名', 255, { description: '閉店表示に使用する店舗名' }),
 })
 
-/** 店舗のトッピングコール情報取得の絞り込み条件（検証はコントローラが行うため定義のみ） */
+/**
+ * 店舗のトッピングコール情報取得の絞り込み条件。
+ *
+ * ドキュメント用と検証用でスキーマを分けず、この1つを
+ * ルート層の validate（400 の判定）とコントローラ（絞り込み条件の組み立て）の
+ * 両方で使う。分けると「検証は直したがドキュメントを直し忘れた」が起こりうる。
+ *
+ * 未指定（`?key=` の空文字を含む）は絞り込み無し、値があれば検証して
+ * 満たさなければ 400 に倒す。移行前は解釈できない絞り込み値を黙って捨てていたが、
+ * 入力ミスが「絞り込み無しの 200」として返るのは誤りを隠す挙動のため改める。
+ */
 export const storeToppingCallsQuerySchema = z.object({
-    call_timing: z
-        .enum(['pre_call', 'post_call', 'all'])
-        .optional()
-        .openapi({
+    call_timing: queryEnum(
+        ['pre_call', 'post_call', 'all'],
+        'コールタイミングは pre_call または post_call または all を指定してください',
+        {
             description: [
                 'コールタイミングでの絞り込み。\n',
                 '`all` を指定した場合は絞り込みを行わない。\n',
-                'これら以外の値を指定すると 400 になる。',
+                '未指定と空文字は絞り込み無しとして扱い、それ以外の値は 400 になる。',
             ].join(''),
-        }),
-    topping_id: z
-        .number()
-        .int()
-        .optional()
-        .openapi({ description: 'トッピングIDでの絞り込み（数値に変換できない値は無視される）' }),
-    call_option_id: z
-        .number()
-        .int()
-        .optional()
-        .openapi({ description: 'コールオプションIDでの絞り込み（数値に変換できない値は無視される）' }),
-    noodleTypeId: z
-        .number()
-        .int()
-        .optional()
-        .openapi({ description: '麺種別IDでの絞り込み（数値に変換できない値は無視される）' }),
+        },
+    ),
+    topping_id: queryInteger('トッピングID', {
+        description: 'トッピングIDでの絞り込み（整数以外を指定すると 400 になる）',
+    }),
+    call_option_id: queryInteger('コールオプションID', {
+        description: 'コールオプションIDでの絞り込み（整数以外を指定すると 400 になる）',
+    }),
+    noodleTypeId: queryInteger('麺種別ID', {
+        description: '麺種別IDでの絞り込み（整数以外を指定すると 400 になる）',
+    }),
 })
 
 // =============================================================================

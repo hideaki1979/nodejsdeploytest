@@ -17,13 +17,14 @@ import { pathWithoutQuery } from '../utils/requestPath'
  * details も同じキー（type / value / msg / path / location）で返す。
  */
 
-/** 検証対象。query は Express 5 で書き戻せないため扱わない（コントローラ側で解釈する） */
+/** 検証対象。params と query は検証のみで、書き戻すのは body だけ（理由は validate 内） */
 export interface ValidationSchemas {
     body?: z.ZodType
     params?: z.ZodType
+    query?: z.ZodType
 }
 
-type ValidationLocation = 'body' | 'params'
+type ValidationLocation = 'body' | 'params' | 'query'
 
 /** express-validator の ValidationError（type: 'field'）と同じ形 */
 interface FieldValidationError {
@@ -95,6 +96,13 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
             if (!result.success) errors.push(...toFieldErrors(result.error, req.params, 'params'))
         }
 
+        // query も検証のみ。Express 5 の req.query は getter で書き戻せないため、
+        // 検証を通った値はここでは使えない。コントローラが同じスキーマで読み直す
+        if (schemas.query) {
+            const result = schemas.query.safeParse(req.query ?? {})
+            if (!result.success) errors.push(...toFieldErrors(result.error, req.query, 'query'))
+        }
+
         // body は検証を通った値（trim / HTMLエスケープ / 数値化を適用したもの）を書き戻す。
         // 移行前も express-validator のサニタイザが同じ位置で req.body を書き換えていた。
         let parsedBody: unknown
@@ -112,8 +120,9 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
             // どの項目がどのルールで落ちたかは path / msg / location で追える。
             // レスポンスの details は移行前の形を保つため value を含めたままにする。
             //
-            // path もクエリ文字列を落とす。このミドルウェアはクエリを検証しておらず
-            // （上記のとおり扱わない）調査に使わないため、残す理由がない。
+            // path はクエリ文字列を落とす。クエリを検証するようになった後も、
+            // どの項目がどのルールで落ちたかは details（value を除く）で追えるため、
+            // クライアントが任意の内容を載せられる生のクエリを常時ログへ残す理由はない。
             logger.error(
                 {
                     errors: errors.map(({ value: _value, ...rest }) => rest),
