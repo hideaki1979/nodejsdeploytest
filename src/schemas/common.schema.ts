@@ -112,7 +112,11 @@ registry.registerComponent('schemas', 'ValidationErrorDetail', {
 })
 
 registry.registerComponent('responses', 'ValidationError', {
-    description: 'リクエストの入力値に誤りがあります（zod スキーマによる検証エラー）。',
+    description: [
+        'リクエストの入力値に誤りがあります。\n',
+        'zod スキーマによる検証エラーは details にフィールド単位の内訳を含む。',
+        'コントローラ・サービス層で弾かれた場合は details を持たず、error のみを返す。',
+    ].join(''),
     content: {
         'application/json': {
             schema: {
@@ -132,11 +136,6 @@ registry.registerComponent('responses', 'ValidationError', {
             },
         },
     },
-})
-
-registry.registerComponent('responses', 'BadRequest', {
-    description: 'リクエストが無効です（コントローラ・サービス層での検証エラー）。',
-    content: { 'application/json': { schema: schemaRef('ErrorResponse') } },
 })
 
 registry.registerComponent('responses', 'Unauthorized', {

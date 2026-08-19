@@ -67,6 +67,18 @@ describe('Stores', () => {
         expectApiResponse(res, { method: 'get', path: '/stores/{id}/toppingcalls', status: 200 })
     })
 
+    // このルートだけ validate({ params }) が漏れており、店舗IDの検証を
+    // コントローラの Number() 変換に頼っていた。2^53 を超える値は
+    // 黙って別のIDへ丸まり、存在する別店舗を引けてしまう
+    it('GET /stores/{id}/toppingcalls は数値化すると別IDへ化ける店舗IDを弾く', async () => {
+        const { app, prisma } = createTestApp()
+
+        const res = await request(app).get('/stores/9007199254740993/toppingcalls')
+
+        expectApiResponse(res, { method: 'get', path: '/stores/{id}/toppingcalls', status: 400 })
+        expect(prisma.store.findUnique).not.toHaveBeenCalled()
+    })
+
     it('GET /maps が spec どおりに応答する', async () => {
         const { app, prisma } = createTestApp()
         prisma.map.findMany.mockResolvedValue([mapRow])

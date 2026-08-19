@@ -115,13 +115,10 @@ export class StoreController {
     * @param res レスポンスオブジェクト
     */
     async getStoreToppingCalls(req: Request, res: Response): Promise<void> {
+        // 整数であることはルート層の validate({ params: storeIdParamSchema }) が保証する。
+        // ここで再度判定すると、spec が有効とする 0 を弾く・小数や 2^53 超を通すといった
+        // 乖離が生まれる（存在しない店舗はサービス層が 404 に倒す）
         const id = Number(req.params.id)
-
-        // パラメータのバリデーション
-        if (!id || isNaN(id)) {
-            this.logger.error({ storeId: id }, '店舗ID不正値エラー')
-            throw new AppError('有効な店舗IDを指定してください', 400)
-        }
 
         // フィルター条件をオブジェクトとして構築
         const filters: StoreToppingCallFilter = {}
