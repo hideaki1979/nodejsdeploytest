@@ -14,8 +14,8 @@ dist/
 src/generated/
 logs/
 *.log
-# npm run openapi:generate が swagger-jsdoc から生成する OpenAPI spec。
-# @swagger JSDoc が唯一の正のため、生成物はコミットしない。
+# npm run openapi:generate が zod スキーマから生成する OpenAPI spec。
+# src/schemas/*.schema.ts と src/routes/*.ts の登録が唯一の正のため、生成物はコミットしない。
 openapi.json
 coverage/
 jnaviproject-firebase-adminsdk-fbsvc-f96e2396e1.json

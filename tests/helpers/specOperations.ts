@@ -11,10 +11,8 @@ export function formatOperation(method: string, specPath: string): string {
 
 /** spec に定義されている全オペレーション */
 export function listSpecOperations(): string[] {
-    const paths = (swaggerSpec as { paths?: Record<string, Record<string, unknown>> }).paths ?? {}
-
-    return Object.entries(paths).flatMap(([specPath, pathItem]) =>
-        Object.keys(pathItem)
+    return Object.entries(swaggerSpec.paths ?? {}).flatMap(([specPath, pathItem]) =>
+        Object.keys(pathItem as object)
             .filter((key) => OPENAPI_OPERATION_METHODS.has(key.toLowerCase()))
             .map((method) => formatOperation(method, specPath)),
     )

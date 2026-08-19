@@ -1,5 +1,5 @@
 import { readCoveredOperations } from './helpers/coverage'
-import { listSpecOperations } from './helpers/specOperations'
+import { bootstrapSpecModules } from './helpers/specBootstrap'
 
 /** globalTeardown が Jest から受け取る設定のうち、実行対象の絞り込みに関わる部分 */
 interface GlobalConfigLike {
@@ -32,6 +32,12 @@ function isFilteredRun(globalConfig: GlobalConfigLike): boolean {
  */
 export default function globalTeardown(globalConfig: GlobalConfigLike): void {
     if (isFilteredRun(globalConfig)) return
+
+    // spec の読み込みはルート定義の require を伴う。
+    // 差し替えを済ませてからでないと Firebase の初期化が走るため、動的に読み込む。
+    bootstrapSpecModules()
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { listSpecOperations } = require('./helpers/specOperations') as typeof import('./helpers/specOperations')
 
     const covered = readCoveredOperations()
     const missing = listSpecOperations()

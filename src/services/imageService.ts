@@ -1,4 +1,4 @@
-import { StoreImageDownloadData, StoreImageEditData, StoreImageUploadData } from "../types/image";
+import { StoreImageDownloadData, StoreImageEditData, StoreImageUpdateData, StoreImageUploadData } from "../types/image";
 import { randomUUID } from 'node:crypto'
 import { bucket } from "../config/firebase";
 import { Image, Prisma, PrismaClient } from "../generated/prisma/client";
@@ -216,7 +216,7 @@ export class ImageService {
     async updateStoreImageService(
         storeId: string | number,
         imageId: string | number,
-        data: StoreImageUploadData,
+        data: StoreImageUpdateData,
         userId: string,
         isAdmin: boolean = false
     ) {

@@ -1,5 +1,5 @@
 # @redocly/cli lint の設定。
-# 対象は npm run openapi:generate が出力する openapi.json（swagger-jsdoc の生成物）。
+# 対象は npm run openapi:generate が出力する openapi.json（zod スキーマからの生成物）。
 #
 # recommended ではなく recommended-strict を使う。
 # recommended は大半のルールが warning で、lint の終了コードは error でしか 1 にならない。

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { ImageService } from "../services/imageService";
-import { StoreImageUploadData } from "../types/image";
+import { StoreImageUpdateData, StoreImageUploadData } from "../types/image";
 import { getAuthenticatedUserid, isAdminUser } from "../utils/auth";
 import { autoInjectable } from "tsyringe";
 
@@ -81,7 +81,7 @@ export class ImageController {
         const imageId = req.params.imageId
 
         // リクエストボディから画像更新データを取得する
-        const updateData: StoreImageUploadData = req.body
+        const updateData: StoreImageUpdateData = req.body
 
         // サービスクラスから画像IDを条件に画像情報・画像トッピング情報を取得する。
         const result = await this.imageService.updateStoreImageService(storeId, imageId, updateData, userId, isAdmin)
