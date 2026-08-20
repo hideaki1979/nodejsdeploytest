@@ -17,7 +17,12 @@ import { pathWithoutQuery } from '../utils/requestPath'
  * details も同じキー（type / value / msg / path / location）で返す。
  */
 
-/** 検証対象。params と query は検証のみで、書き戻すのは body だけ（理由は validate 内） */
+/**
+ * 検証対象。書き戻し先は3つとも異なる（理由は validate 内）。
+ *   body   … 検証済みの値を req.body へ書き戻す
+ *   query  … 検証済みの値を res.locals へ置く（getValidatedQuery で読む）
+ *   params … 検証のみ
+ */
 export interface ValidationSchemas {
     body?: z.ZodType
     params?: z.ZodType
@@ -84,6 +89,34 @@ function onlyFirstErrorPerField(errors: FieldValidationError[]): FieldValidation
     })
 }
 
+/** 検証済みクエリを置く res.locals のキー */
+const VALIDATED_QUERY = 'validatedQuery'
+
+/**
+ * res.locals へは検証結果を包んで置く。値のまま置くと、検証結果が undefined の
+ * スキーマで「validate を通っていない」と区別が付かなくなるため。
+ */
+interface ValidatedQuery {
+    data: unknown
+}
+
+/**
+ * validate({ query }) が検証を通したクエリを取り出す。
+ *
+ * 型引数はスキーマから導く（例: `z.output<typeof storeToppingCallsQuerySchema>`）。
+ * ルートに validate({ query }) が付いていなければ包みごと無く、
+ * 「絞り込み無しの 200」として静かに流れるより先に、設定漏れとして落とす。
+ */
+export function getValidatedQuery<T>(res: Response): T {
+    const validated = res.locals[VALIDATED_QUERY] as ValidatedQuery | undefined
+    if (validated === undefined) {
+        throw new Error(
+            'getValidatedQuery は validate({ query }) を通したルートでのみ使える（ルート定義を確認）',
+        )
+    }
+    return validated.data as T
+}
+
 export function validate(schemas: ValidationSchemas): RequestHandler {
     return (req: Request, res: Response, next: NextFunction): void => {
         const errors: FieldValidationError[] = []
@@ -96,11 +129,17 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
             if (!result.success) errors.push(...toFieldErrors(result.error, req.params, 'params'))
         }
 
-        // query も検証のみ。Express 5 の req.query は getter で書き戻せないため、
-        // 検証を通った値はここでは使えない。コントローラが同じスキーマで読み直す
+        // query は req.query へ書き戻せない（Express 5 では getter のため）。
+        // かわりに検証を通った値を res.locals へ置き、コントローラは getValidatedQuery で読む。
+        // 同じスキーマでコントローラが読み直す形にすると、パースが2箇所に増えるうえ、
+        // ルートから validate({ query }) が外れたときに ZodError が 500 になって現れる。
+        //
+        // 検証結果は包んだまま res.locals へ渡す（理由は ValidatedQuery）
+        let parsedQuery: ValidatedQuery | undefined
         if (schemas.query) {
             const result = schemas.query.safeParse(req.query ?? {})
-            if (!result.success) errors.push(...toFieldErrors(result.error, req.query, 'query'))
+            if (result.success) parsedQuery = { data: result.data }
+            else errors.push(...toFieldErrors(result.error, req.query, 'query'))
         }
 
         // body は検証を通った値（trim / HTMLエスケープ / 数値化を適用したもの）を書き戻す。
@@ -141,6 +180,7 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
         // スキーマに無いキーは zod が落とすため、意図しない項目が
         // そのままサービス層へ流れることはない
         if (parsedBody !== undefined) req.body = parsedBody
+        if (parsedQuery) res.locals[VALIDATED_QUERY] = parsedQuery
 
         next()
     }

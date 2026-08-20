@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { StoreService } from "../services/storeService";
 import { FormattedToppingOptionNameStoreData, StoreToppingCallFilter } from "../types/store";
-import { storeToppingCallsQuerySchema } from "../schemas/store.schema";
+import { StoreToppingCallsQuery } from "../schemas/store.schema";
+import { getValidatedQuery } from "../middlewares/zodValidation";
 import { autoInjectable, inject } from "tsyringe";
 import { pinoLogger } from "../di.token";
 import { Logger } from "pino";
@@ -120,11 +121,11 @@ export class StoreController {
         // 乖離が生まれる（存在しない店舗はサービス層が 404 に倒す）
         const id = Number(req.params.id)
 
-        // クエリの解釈もルート層の validate と同じスキーマに任せる。
-        // 値違反は validate が details つきの 400 で返しており、ここへ届く時点で必ず成功する。
-        // Express 5 の req.query は書き戻せないため検証済みの値を受け取る手段が無く、
-        // 同じスキーマで読み直している（解釈を手書きすると validate と食い違いうる）
-        const query = storeToppingCallsQuerySchema.parse(req.query)
+        // クエリの解釈もルート層の validate が済ませている。
+        // 値違反は validate が details つきの 400 で返すため、ここへ届く時点で検証済み。
+        // Express 5 の req.query は書き戻せないので、検証済みの値は res.locals 経由で受け取る
+        // （ここで読み直すとパースが2箇所に増え、解釈が validate と食い違いうる）
+        const query = getValidatedQuery<StoreToppingCallsQuery>(res)
 
         // フィルター条件をオブジェクトとして構築（未指定の項目は undefined）
         const filters: StoreToppingCallFilter = {

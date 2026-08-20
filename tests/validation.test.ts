@@ -2,7 +2,8 @@ import express, { type Express } from 'express'
 import request from 'supertest'
 import { container } from 'tsyringe'
 import { pinoLogger } from '../src/di.token'
-import { validate, type ValidationSchemas } from '../src/middlewares/zodValidation'
+import { z } from '../src/openapi/zod'
+import { getValidatedQuery, validate, type ValidationSchemas } from '../src/middlewares/zodValidation'
 import { imageUpdateInputSchema, imageUploadInputSchema } from '../src/schemas/image.schema'
 import {
     storeIdParamSchema,
@@ -33,7 +34,13 @@ function createValidationApp(schemas: ValidationSchemas, path = '/'): Express {
     const app = express()
     app.use(express.json())
     app.post(path, validate(schemas), (req, res) => {
-        res.status(200).json({ body: req.body, params: req.params, query: req.query })
+        res.status(200).json({
+            body: req.body,
+            params: req.params,
+            query: req.query,
+            // validate が res.locals へ置いた検証済みクエリ（コントローラが読む値）
+            validatedQuery: schemas.query ? getValidatedQuery(res) : undefined,
+        })
     })
     return app
 }
@@ -413,25 +420,60 @@ describe('リクエスト検証', () => {
             expect(res.status).toBe(200)
         })
 
-        it('空文字（?key=）も未指定として通す', async () => {
-            // 移行前のコントローラは falsy 判定で空文字を「絞り込み無し」に倒していた。
-            // 入力欄を空のまま送るクライアントを壊さないよう、この受理範囲は保つ
+        // 移行前のコントローラは falsy 判定で空文字を「絞り込み無し」に倒していたが、
+        // spec は integer / enum として公開しており空文字を機械可読な形で表現できない。
+        // 実際に express-openapi-validator は `?key=` を弾くため、spec に従う
+        // クライアントからは到達できない受理範囲を本番だけが持つ状態になっていた。
+        // 絞り込み無しは「キーを送らない」に一本化する（jnavi_web / jNavi とも空文字は送っていない）
+        it('空文字（?key=）は 400 にする', async () => {
             const res = await request(queryApp())
                 .post('/')
                 .query({ call_timing: '', topping_id: '' })
 
-            expect(res.status).toBe(200)
+            expect(res.status).toBe(400)
+            expect(messagesOf(res.body)).toEqual({
+                call_timing:
+                    'コールタイミングは pre_call または post_call または all を指定してください',
+                topping_id: 'トッピングIDは整数で指定してください',
+            })
         })
 
-        it('妥当な値は通し、req.query は書き換えない', async () => {
+        it('妥当な値は req.query を書き換えず res.locals へ検証済みの値を置く', async () => {
             // Express 5 の req.query は getter のため書き戻せない。
-            // コントローラは同じスキーマで読み直す前提で、ここでは検証だけを行う
+            // コントローラが読み直さずに済むよう、検証済みの値は res.locals 経由で渡す
             const res = await request(queryApp())
                 .post('/')
                 .query({ call_timing: 'pre_call', topping_id: '1' })
 
             expect(res.status).toBe(200)
             expect(res.body.query).toEqual({ call_timing: 'pre_call', topping_id: '1' })
+            // topping_id は数値化済み（コントローラが Number() を挟まずに使える）
+            expect(res.body.validatedQuery).toEqual({ call_timing: 'pre_call', topping_id: 1 })
+        })
+
+        it('validate({ query }) が無いルートで検証済みクエリを読むと落とす', () => {
+            // 「絞り込み無しの 200」として静かに流れるより、ルートの設定漏れとして表に出す
+            const res = { locals: {} } as unknown as Parameters<typeof getValidatedQuery>[0]
+
+            expect(() => getValidatedQuery(res)).toThrow(/validate\(\{ query \}\)/)
+        })
+
+        it('検証結果が undefined になるスキーマを未検証として扱わない', () => {
+            // 上の「設定漏れ」判定は res.locals に包みがあるかで行う。
+            // 値をそのまま置くと、検証は成功したが結果が undefined のときに
+            // 未検証と区別が付かず、getValidatedQuery が誤って落ちる。
+            // 現在のルートの query スキーマは全て z.object() で undefined にならないため、
+            // これは実在の経路ではなく受け渡しの不変条件を固定するためのテスト
+            const app = createValidationApp({ query: z.unknown().transform(() => undefined) })
+
+            return request(app)
+                .post('/')
+                .then((res) => {
+                    // 落ちれば 500 になる（例外は express の既定ハンドラへ抜ける）
+                    expect(res.status).toBe(200)
+                    // 例外を避けるために別の値へ倒していないことも確かめる
+                    expect(res.body).not.toHaveProperty('validatedQuery')
+                })
         })
 
         it('call_timing の値違反は details つきの 400 になる（移行前はコントローラが返していた）', async () => {
