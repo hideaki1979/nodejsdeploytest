@@ -214,41 +214,6 @@ export function enumField<const T extends readonly [string, ...string[]]>(
 }
 
 /**
- * 絞り込みクエリの列挙項目。
- *
- * クエリ文字列は未指定なら undefined、`?key=` なら空文字で届く。
- * 移行前のコントローラは `if (req.query.call_timing)` の falsy 判定で
- * どちらも「絞り込みなし」に倒していたため、空文字は未指定として扱う。
- */
-export function queryEnum<const T extends readonly [string, ...string[]]>(
-    values: T,
-    message: string,
-    doc: FieldDoc,
-) {
-    return z
-        .preprocess(
-            (value) => (value === '' ? undefined : value),
-            z.enum(values, { error: message }).optional(),
-        )
-        .openapi(doc)
-}
-
-/**
- * 絞り込みクエリの整数項目。
- *
- * 空文字は queryEnum と同じく未指定として素通しし、値があるときは整数として検証する。
- * 移行前のコントローラは `Number()` → `isNaN()` で「解釈できない値は無視」しており、
- * `topping_id=abc` が絞り込み無しの 200、`topping_id=1.5` が Prisma まで届いて 500、
- * 2^53 を超える値は別のIDへ化ける、と入力ミスの結果が経路ごとにばらけていた。
- * 誤った絞り込み条件は黙って捨てず、他の項目と同じく 400 で返す。
- */
-export function queryInteger(label: string, doc: FieldDoc) {
-    return z
-        .preprocess((value) => (value === '' ? undefined : value), integerOnly(label, doc).optional())
-        .openapi({ type: 'integer', ...doc })
-}
-
-/**
  * 任意の配列項目。移行前: optional() → isArray()
  * 未指定のみ素通しし、null は配列でないため弾かれる。
  */

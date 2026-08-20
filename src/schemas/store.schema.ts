@@ -12,8 +12,6 @@ import {
     integerOnly,
     optionalArray,
     optionalText,
-    queryEnum,
-    queryInteger,
     requiredInteger,
     requiredText,
 } from './primitives'
@@ -104,35 +102,47 @@ export const storeCloseInputSchema = z.object({
  * 店舗のトッピングコール情報取得の絞り込み条件。
  *
  * ドキュメント用と検証用でスキーマを分けず、この1つを
- * ルート層の validate（400 の判定）とコントローラ（絞り込み条件の組み立て）の
- * 両方で使う。分けると「検証は直したがドキュメントを直し忘れた」が起こりうる。
+ * ルート層の validate（400 の判定・検証済みの値の受け渡し）で使う。
+ * 分けると「検証は直したがドキュメントを直し忘れた」が起こりうる。
  *
- * 未指定（`?key=` の空文字を含む）は絞り込み無し、値があれば検証して
- * 満たさなければ 400 に倒す。移行前は解釈できない絞り込み値を黙って捨てていたが、
- * 入力ミスが「絞り込み無しの 200」として返るのは誤りを隠す挙動のため改める。
+ * 絞り込み無しは「キーを送らない」（call_timing は `all`）に一本化し、
+ * 値が届いたら必ず検証して、満たさなければ 400 に倒す。
+ * 移行前は解釈できない絞り込み値を黙って捨てていたが、入力ミスが
+ * 「絞り込み無しの 200」として返るのは誤りを隠す挙動のため改める。
+ *
+ * `?key=` の空文字も 400。移行前のコントローラは falsy 判定でこれを絞り込み無しへ
+ * 倒していたが、spec は各項目を integer / enum として公開しており、空文字を
+ * 機械可読な形では表現できない（allowEmptyValue は OpenAPI 3.x で非推奨、
+ * enum なら `''` を列挙に混ぜる必要があり生成クライアントの型まで汚れる）。
+ * 実際 express-openapi-validator は `?topping_id=` を
+ * 「Empty value found for query parameter」で弾いており、spec に従うクライアントからは
+ * 到達できない受理範囲を本番だけが持つ状態になっていた。
  */
 export const storeToppingCallsQuerySchema = z.object({
-    call_timing: queryEnum(
+    call_timing: enumField(
         ['pre_call', 'post_call', 'all'],
         'コールタイミングは pre_call または post_call または all を指定してください',
         {
             description: [
                 'コールタイミングでの絞り込み。\n',
                 '`all` を指定した場合は絞り込みを行わない。\n',
-                '未指定と空文字は絞り込み無しとして扱い、それ以外の値は 400 になる。',
+                '未指定は絞り込み無しとして扱い、それ以外の値（空文字を含む）は 400 になる。',
             ].join(''),
         },
-    ),
-    topping_id: queryInteger('トッピングID', {
+    ).optional(),
+    topping_id: integerOnly('トッピングID', {
         description: 'トッピングIDでの絞り込み（整数以外を指定すると 400 になる）',
-    }),
-    call_option_id: queryInteger('コールオプションID', {
+    }).optional(),
+    call_option_id: integerOnly('コールオプションID', {
         description: 'コールオプションIDでの絞り込み（整数以外を指定すると 400 になる）',
-    }),
-    noodleTypeId: queryInteger('麺種別ID', {
+    }).optional(),
+    noodleTypeId: integerOnly('麺種別ID', {
         description: '麺種別IDでの絞り込み（整数以外を指定すると 400 になる）',
-    }),
+    }).optional(),
 })
+
+/** validate({ query }) が検証を通したあとの絞り込み条件（コントローラが受け取る形） */
+export type StoreToppingCallsQuery = z.output<typeof storeToppingCallsQuerySchema>
 
 // =============================================================================
 // レスポンス
