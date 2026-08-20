@@ -4,7 +4,11 @@ import { container } from 'tsyringe'
 import { pinoLogger } from '../src/di.token'
 import { validate, type ValidationSchemas } from '../src/middlewares/zodValidation'
 import { imageUpdateInputSchema, imageUploadInputSchema } from '../src/schemas/image.schema'
-import { storeIdParamSchema, storeInputSchema } from '../src/schemas/store.schema'
+import {
+    storeIdParamSchema,
+    storeInputSchema,
+    storeToppingCallsQuerySchema,
+} from '../src/schemas/store.schema'
 import { userInputSchema } from '../src/schemas/user.schema'
 import logger from './mocks/logger'
 
@@ -29,7 +33,7 @@ function createValidationApp(schemas: ValidationSchemas, path = '/'): Express {
     const app = express()
     app.use(express.json())
     app.post(path, validate(schemas), (req, res) => {
-        res.status(200).json({ body: req.body, params: req.params })
+        res.status(200).json({ body: req.body, params: req.params, query: req.query })
     })
     return app
 }
@@ -394,6 +398,73 @@ describe('リクエスト検証', () => {
 
             expect(res.status).toBe(200)
             expect(res.body.body).toEqual({})
+        })
+    })
+
+    // #92: call_timing の検証がコントローラに残っており、このルートだけ
+    // 400 の発生源が validate とコントローラの2つに割れていた。
+    // 検証をスキーマへ寄せ、絞り込み値の誤りは全て validate が返す。
+    describe('絞り込みクエリ', () => {
+        const queryApp = () => createValidationApp({ query: storeToppingCallsQuerySchema })
+
+        it('未指定は絞り込み無しとして通す', async () => {
+            const res = await request(queryApp()).post('/')
+
+            expect(res.status).toBe(200)
+        })
+
+        it('空文字（?key=）も未指定として通す', async () => {
+            // 移行前のコントローラは falsy 判定で空文字を「絞り込み無し」に倒していた。
+            // 入力欄を空のまま送るクライアントを壊さないよう、この受理範囲は保つ
+            const res = await request(queryApp())
+                .post('/')
+                .query({ call_timing: '', topping_id: '' })
+
+            expect(res.status).toBe(200)
+        })
+
+        it('妥当な値は通し、req.query は書き換えない', async () => {
+            // Express 5 の req.query は getter のため書き戻せない。
+            // コントローラは同じスキーマで読み直す前提で、ここでは検証だけを行う
+            const res = await request(queryApp())
+                .post('/')
+                .query({ call_timing: 'pre_call', topping_id: '1' })
+
+            expect(res.status).toBe(200)
+            expect(res.body.query).toEqual({ call_timing: 'pre_call', topping_id: '1' })
+        })
+
+        it('call_timing の値違反は details つきの 400 になる（移行前はコントローラが返していた）', async () => {
+            const res = await request(queryApp()).post('/').query({ call_timing: 'foo' })
+
+            expect(res.status).toBe(400)
+            expect(res.body.details[0]).toMatchObject({
+                type: 'field',
+                location: 'query',
+                path: 'call_timing',
+                msg: 'コールタイミングは pre_call または post_call または all を指定してください',
+            })
+        })
+
+        // 移行前は Number() → isNaN() で「解釈できない値は無視」しており、
+        // 入力ミスが絞り込み無しの 200 として返っていた（1.5 は Prisma まで届いて 500）
+        it.each([
+            ['整数でない文字列', 'abc', 'トッピングIDは整数で指定してください'],
+            ['小数', '1.5', 'トッピングIDは整数で指定してください'],
+            ['同名の複数指定', ['1', '2'], 'トッピングIDは整数で指定してください'],
+            ['2^53を超える整数', '9007199254740993', 'トッピングIDは扱える整数の範囲を超えています'],
+        ])('絞り込みIDの%sは 400 にする', async (_name, value, message) => {
+            const res = await request(queryApp()).post('/').query({ topping_id: value })
+
+            expect(res.status).toBe(400)
+            expect(messagesOf(res.body).topping_id).toBe(message)
+        })
+
+        it('絞り込みIDの 0 は「指定あり」として通す', async () => {
+            // 該当0件を返すべきリクエストであり、絞り込み無しへ倒してはいけない
+            const res = await request(queryApp()).post('/').query({ topping_id: '0' })
+
+            expect(res.status).toBe(200)
         })
     })
 

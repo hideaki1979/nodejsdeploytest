@@ -103,7 +103,7 @@ registry.registerComponent('schemas', 'ValidationErrorDetail', {
         path: { type: 'string', description: '対象のフィールド名', example: 'store_name' },
         location: {
             type: 'string',
-            enum: ['body', 'params'],
+            enum: ['body', 'params', 'query'],
             description: '値の取得元',
             example: 'body',
         },
