@@ -2,6 +2,7 @@ import express, { type Express } from 'express'
 import request from 'supertest'
 import { container } from 'tsyringe'
 import { pinoLogger } from '../src/di.token'
+import { z } from '../src/openapi/zod'
 import { getValidatedQuery, validate, type ValidationSchemas } from '../src/middlewares/zodValidation'
 import { imageUpdateInputSchema, imageUploadInputSchema } from '../src/schemas/image.schema'
 import {
@@ -455,6 +456,24 @@ describe('リクエスト検証', () => {
             const res = { locals: {} } as unknown as Parameters<typeof getValidatedQuery>[0]
 
             expect(() => getValidatedQuery(res)).toThrow(/validate\(\{ query \}\)/)
+        })
+
+        it('検証結果が undefined になるスキーマを未検証として扱わない', () => {
+            // 上の「設定漏れ」判定は res.locals に包みがあるかで行う。
+            // 値をそのまま置くと、検証は成功したが結果が undefined のときに
+            // 未検証と区別が付かず、getValidatedQuery が誤って落ちる。
+            // 現在のルートの query スキーマは全て z.object() で undefined にならないため、
+            // これは実在の経路ではなく受け渡しの不変条件を固定するためのテスト
+            const app = createValidationApp({ query: z.unknown().transform(() => undefined) })
+
+            return request(app)
+                .post('/')
+                .then((res) => {
+                    // 落ちれば 500 になる（例外は express の既定ハンドラへ抜ける）
+                    expect(res.status).toBe(200)
+                    // 例外を避けるために別の値へ倒していないことも確かめる
+                    expect(res.body).not.toHaveProperty('validatedQuery')
+                })
         })
 
         it('call_timing の値違反は details つきの 400 になる（移行前はコントローラが返していた）', async () => {

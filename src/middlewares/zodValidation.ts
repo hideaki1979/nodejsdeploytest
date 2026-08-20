@@ -93,20 +93,28 @@ function onlyFirstErrorPerField(errors: FieldValidationError[]): FieldValidation
 const VALIDATED_QUERY = 'validatedQuery'
 
 /**
+ * res.locals へは検証結果を包んで置く。値のまま置くと、検証結果が undefined の
+ * スキーマで「validate を通っていない」と区別が付かなくなるため。
+ */
+interface ValidatedQuery {
+    data: unknown
+}
+
+/**
  * validate({ query }) が検証を通したクエリを取り出す。
  *
  * 型引数はスキーマから導く（例: `z.output<typeof storeToppingCallsQuerySchema>`）。
- * ルートに validate({ query }) が付いていなければ値が無く、
+ * ルートに validate({ query }) が付いていなければ包みごと無く、
  * 「絞り込み無しの 200」として静かに流れるより先に、設定漏れとして落とす。
  */
 export function getValidatedQuery<T>(res: Response): T {
-    const value = res.locals[VALIDATED_QUERY]
-    if (value === undefined) {
+    const validated = res.locals[VALIDATED_QUERY] as ValidatedQuery | undefined
+    if (validated === undefined) {
         throw new Error(
             'getValidatedQuery は validate({ query }) を通したルートでのみ使える（ルート定義を確認）',
         )
     }
-    return value as T
+    return validated.data as T
 }
 
 export function validate(schemas: ValidationSchemas): RequestHandler {
@@ -126,9 +134,8 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
         // 同じスキーマでコントローラが読み直す形にすると、パースが2箇所に増えるうえ、
         // ルートから validate({ query }) が外れたときに ZodError が 500 になって現れる。
         //
-        // 検証結果は値のまま持たずに包む。undefined を返すスキーマだと
-        // 「検証していない」と区別が付かず、getValidatedQuery が誤って落ちるため
-        let parsedQuery: { data: unknown } | undefined
+        // 検証結果は包んだまま res.locals へ渡す（理由は ValidatedQuery）
+        let parsedQuery: ValidatedQuery | undefined
         if (schemas.query) {
             const result = schemas.query.safeParse(req.query ?? {})
             if (result.success) parsedQuery = { data: result.data }
@@ -173,7 +180,7 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
         // スキーマに無いキーは zod が落とすため、意図しない項目が
         // そのままサービス層へ流れることはない
         if (parsedBody !== undefined) req.body = parsedBody
-        if (parsedQuery) res.locals[VALIDATED_QUERY] = parsedQuery.data
+        if (parsedQuery) res.locals[VALIDATED_QUERY] = parsedQuery
 
         next()
     }
