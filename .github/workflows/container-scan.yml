@@ -5,11 +5,15 @@ on:
     paths:
       - "docker-compose.yml"
       - ".github/workflows/container-scan.yml"
+      # ゲートの判定結果を左右するため、変更時は必ずスキャンして検証する。
+      # 抑止の追加・期限の変更が意図どおりか、CI で確かめられるようにする。
+      - ".trivyignore.yaml"
   push:
     branches: [main]
     paths:
       - "docker-compose.yml"
       - ".github/workflows/container-scan.yml"
+      - ".trivyignore.yaml"
   # イメージが変わらなくても新しい CVE は公開されるため、定期実行で検知する。
   # 週次スキャンの失敗が「更新が必要になった」の通知になる。
   schedule:
