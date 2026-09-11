@@ -62,7 +62,7 @@ jobs:
       #   上流未解決: https://github.com/docker-library/postgres/issues/1324
       #   → 除外しないと恒久的に赤になり、本当の CVE が埋もれるため意図的に除外する。
       #   除外分はゲート成功時に後続ステップでサマリへ掲示し、隠蔽にならないようにしている。
-      - name: 脆弱性ゲート (gosu 以外に CRITICAL/HIGH があれば失敗)
+      - name: 脆弱性ゲート (除外対象以外に CRITICAL/HIGH があれば失敗)
         id: vulnerability_gate
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -72,6 +72,11 @@ jobs:
           exit-code: "1"
           ignore-unfixed: false
           skip-files: usr/local/bin/gosu
+          # 上流イメージの再ビルド待ちで取り込めない CVE を期限付きで抑止する。
+          # 内訳と抑止理由は .trivyignore.yaml を参照（追跡: #111）。
+          # ゲート判定にのみ適用し、下の SARIF 生成には適用しない。
+          # Security タブには全件を残し、抑止が隠蔽にならないようにするため。
+          trivyignores: .trivyignore.yaml
           format: table
 
       # --- Security タブ連携 -------------------------------------------------
@@ -93,14 +98,19 @@ jobs:
           category: trivy-container
 
       # --- 除外分の可視化 ---------------------------------------------------
-      # ゲートから外した gosu の検出結果を、参考情報としてジョブサマリに残す。
+      # ゲートから外した検出結果を、参考情報としてジョブサマリに残す。
       # 「除外した＝無かったこと」にしないための記録。
-      # 除外せずに再スキャンし、gosu 由来の検出を一覧化する（判定はしない）。
+      # 除外設定を付けずに再スキャンし、対象を一覧化する（判定はしない）。
       #
-      # ゲート成功時のみ実行する点が重要。この再スキャンは skip-files を付けないため
-      # 出力には「gosu 由来」と「それ以外」が混在しうるが、ゲートが成功している
-      # ＝ gosu 以外に CRITICAL/HIGH は存在しない、が保証されるため、
-      # その条件下でのみ「全件 = gosu 由来」と言い切れる。
+      # 除外元は2種類ある:
+      #   1. skip-files    … gosu 由来（上流未解決・恒久）
+      #   2. .trivyignore.yaml … 上流イメージの再ビルド待ち（期限付き・#111）
+      #
+      # ゲート成功時のみ実行する点が重要。この再スキャンは skip-files も
+      # trivyignores も付けないため出力には除外分とそれ以外が混在しうるが、
+      # ゲートが成功している＝「gosu 由来」でも「.trivyignore.yaml 記載」でもない
+      # CRITICAL/HIGH は存在しない、が保証される。
+      # その条件下でのみ「全件 = 意図的に除外したもの」と言い切れる。
       # 無条件に実行すると、ゲートを落とした本物の CVE を
       # 「除外済みの既知ノイズ」として誤って提示してしまう。
       - name: 除外分の再スキャン (参考情報)
@@ -116,17 +126,19 @@ jobs:
           template: '{{ range . }}{{ range .Vulnerabilities }}{{ .VulnerabilityID }} ({{ .Severity }}) {{ .PkgName }}{{ "\n" }}{{ end }}{{ end }}'
           output: excluded.txt
 
-      - name: 除外した gosu の検出内容をサマリに掲示
+      - name: 除外した検出内容をサマリに掲示
         if: ${{ always() && steps.vulnerability_gate.outcome == 'success' }}
         continue-on-error: true
         run: |
           set -uo pipefail
           {
-            echo "### 参考: ゲートから除外した gosu の検出結果"
+            echo "### 参考: ゲートから除外した検出結果"
             echo
-            echo "以下は \`/usr/local/bin/gosu\` 由来のため判定対象外にしています。"
-            echo "上流 issue が解決したら \`skip-files\` を外してください →"
-            echo "[docker-library/postgres#1324](https://github.com/docker-library/postgres/issues/1324)"
+            echo "以下はいずれも意図的に判定対象外にしているものです。"
+            echo
+            echo "- \`/usr/local/bin/gosu\` 由来 — 上流 issue 解決後に \`skip-files\` を外す →"
+            echo "  [docker-library/postgres#1324](https://github.com/docker-library/postgres/issues/1324)"
+            echo "- \`.trivyignore.yaml\` 記載分 — 上流イメージの再ビルド待ち（期限付き）→ #111"
             echo
             echo '```'
             sort -u excluded.txt 2>/dev/null || echo "(取得できませんでした)"
