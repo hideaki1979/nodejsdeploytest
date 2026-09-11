@@ -10,6 +10,22 @@
 #   - expired_at を必ず付ける。期限切れ後は自動的にゲートが再び赤くなり、
 #     再判断を強制される。恒久的な抑止にはしない
 #
+# 期限を 2026-11-30 にした根拠:
+#   postgres 公式イメージが再ビルドされる契機は主に PostgreSQL の
+#   マイナーリリースで、実績として公開はリリースの2〜3日後。
+#     2026-05-14 リリース -> 16.14-alpine 2026-05-16 (2日)
+#     2026-08-13 リリース -> 16.15-alpine 2026-08-16 (3日)
+#   次回マイナーリリースは 2026-11-12 なので、イメージ公開は 11/14〜16 頃、
+#   Dependabot の docker-compose 更新(毎週月曜)で 11/16 または 11/23 に PR が出る。
+#   11月末ならマージまで余裕を持って収まる。
+#
+#   もう一つの契機である Alpine 側の更新は当てにしない。
+#   alpine:3.24 は 2026-06-16 を最後に更新されておらず(3.24.1)、
+#   イメージ自体がまだ libcrypto3 3.5.7-r0 を抱えている。次回時期は読めない。
+#
+#   「予定どおり延長される期限」は延長を儀式化させ、期限を切った意味を失わせる。
+#   期限が来たときに実際の判断材料が揃っている日付を選ぶこと。
+#
 # このファイルはゲート判定にのみ適用する。SARIF アップロード側には
 # 適用しないため、Security タブには従来どおり全件が残る（隠蔽にならない）。
 #
@@ -31,7 +47,7 @@ vulnerabilities:
       postgres 公式イメージが 2026-08-16 以降再ビルドされておらず取り込めない。
       postgres 16 / 17 / 18 の alpine タグはいずれも同一の Alpine 3.24.1 上に
       ビルドされており、メジャー更新しても本 CVE は解消しない（検証済み）。
-    expired_at: 2026-10-31
+    expired_at: 2026-11-30
 
   # --- util-linux (libuuid) -------------------------------------------------
   # 以下 7 件はいずれも mount(8) / nsenter(1) を特権実行する経路の脆弱性。
@@ -41,39 +57,39 @@ vulnerabilities:
   - id: CVE-2026-53612
     statement: >-
       util-linux: mount プログラムの TOCTOU。postgres は mount(8) を実行しない。
-    expired_at: 2026-10-31
+    expired_at: 2026-11-30
 
   - id: CVE-2026-53613
     statement: >-
       util-linux: mount プログラムの TOCTOU（別経路）。postgres は mount(8) を実行しない。
-    expired_at: 2026-10-31
+    expired_at: 2026-11-30
 
   - id: CVE-2026-53614
     statement: >-
       util-linux: SUID mount(8) による nosuid/noexec の回避。
       postgres は SUID mount を実行しない。
-    expired_at: 2026-10-31
+    expired_at: 2026-11-30
 
   - id: CVE-2026-76642
     statement: >-
       util-linux: 外部 mount ヘルパの失敗時の扱いの不備。
       postgres は外部 mount ヘルパを使用しない。
-    expired_at: 2026-10-31
+    expired_at: 2026-11-30
 
   - id: CVE-2026-78408
     statement: >-
       util-linux: nsenter --join-cgroup による root 権限のリーク。
       postgres は nsenter を実行しない。
-    expired_at: 2026-10-31
+    expired_at: 2026-11-30
 
   - id: CVE-2026-78409
     statement: >-
       util-linux: X-mount.subdir の detached-tree の扱いの不備。
       postgres は mount(8) を実行しない。
-    expired_at: 2026-10-31
+    expired_at: 2026-11-30
 
   - id: CVE-2026-78410
     statement: >-
       util-linux: 制限付き bind mount がマウント先を固定しない問題。
       postgres は bind mount を実行しない。
-    expired_at: 2026-10-31
+    expired_at: 2026-11-30
