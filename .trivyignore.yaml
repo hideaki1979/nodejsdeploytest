@@ -1,0 +1,79 @@
+# container-scan.yml の脆弱性ゲート専用の抑止リスト。
+#
+# ここに挙げるのは「postgres 公式イメージの Alpine ベース由来で、
+# 修正パッケージは Alpine リポジトリに既にあるが、上流がイメージを
+# 再ビルドしていないため取り込めない」CVE のみ。
+#
+# 方針:
+#   - CVE 単位で列挙する。パッケージ単位・severity 単位の一括抑止はしない
+#   - statement に「なぜこのコンテナで実行され得ないか」を必ず書く
+#   - expired_at を必ず付ける。期限切れ後は自動的にゲートが再び赤くなり、
+#     再判断を強制される。恒久的な抑止にはしない
+#
+# このファイルはゲート判定にのみ適用する。SARIF アップロード側には
+# 適用しないため、Security タブには従来どおり全件が残る（隠蔽にならない）。
+#
+# 追跡: #111
+#
+# 期限が来たら:
+#   1. docker-compose.yml のダイジェストが更新済みか確認する
+#      （Dependabot の docker-compose 更新PRが来ていれば取り込む）
+#   2. 解消していればこのファイルの該当エントリを削除する
+#   3. 未解消なら期限を延長せず、上流の状況を #111 に追記して再判断する
+
+vulnerabilities:
+  # --- openssl (libcrypto3 / libssl3) ---------------------------------------
+  - id: CVE-2026-14456
+    statement: >-
+      OpenSSL の QUIC サーバ実装における無制限のメモリ増加による DoS。
+      PostgreSQL は QUIC を使用しないため、該当コードパスは実行されない。
+      修正版 3.5.8-r0 は Alpine 3.24 リポジトリに提供済みだが、
+      postgres 公式イメージが 2026-08-16 以降再ビルドされておらず取り込めない。
+      postgres 16 / 17 / 18 の alpine タグはいずれも同一の Alpine 3.24.1 上に
+      ビルドされており、メジャー更新しても本 CVE は解消しない（検証済み）。
+    expired_at: 2026-10-31
+
+  # --- util-linux (libuuid) -------------------------------------------------
+  # 以下 7 件はいずれも mount(8) / nsenter(1) を特権実行する経路の脆弱性。
+  # 本イメージが libuuid をリンクしているのは UUID 生成のためであり、
+  # postgres はこれらのバイナリを呼び出さない。
+  # 修正版 2.42.3-r0 / -r1 は Alpine 3.24 リポジトリに提供済み。
+  - id: CVE-2026-53612
+    statement: >-
+      util-linux: mount プログラムの TOCTOU。postgres は mount(8) を実行しない。
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-53613
+    statement: >-
+      util-linux: mount プログラムの TOCTOU（別経路）。postgres は mount(8) を実行しない。
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-53614
+    statement: >-
+      util-linux: SUID mount(8) による nosuid/noexec の回避。
+      postgres は SUID mount を実行しない。
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-76642
+    statement: >-
+      util-linux: 外部 mount ヘルパの失敗時の扱いの不備。
+      postgres は外部 mount ヘルパを使用しない。
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-78408
+    statement: >-
+      util-linux: nsenter --join-cgroup による root 権限のリーク。
+      postgres は nsenter を実行しない。
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-78409
+    statement: >-
+      util-linux: X-mount.subdir の detached-tree の扱いの不備。
+      postgres は mount(8) を実行しない。
+    expired_at: 2026-10-31
+
+  - id: CVE-2026-78410
+    statement: >-
+      util-linux: 制限付き bind mount がマウント先を固定しない問題。
+      postgres は bind mount を実行しない。
+    expired_at: 2026-10-31
