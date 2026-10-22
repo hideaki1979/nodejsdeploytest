@@ -69,8 +69,9 @@ jobs:
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          # 基準を Node 24 にしている理由は build.yml のコメントを参照。
-          node-version: "24"
+          # engines.node を参照する理由と check-latest の理由は build.yml のコメントを参照。
+          node-version-file: "package.json"
+          check-latest: true
           cache: "npm"
 
       - name: 依存インストール
