@@ -26,5 +26,7 @@ const app = createApp()
  */
 const PORT = config.server.port
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`)
+    // 本番（Render）で実際に動いている Node のバージョンをログから確認できるようにする。
+    // Render のビルドログは保持期間を過ぎると消え、Shell は無料プランでは使えないため。
+    console.log(`Server is running on port ${PORT} (Node.js ${process.version})`)
 })
