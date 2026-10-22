@@ -61,7 +61,7 @@ J.Navi API は、二郎系ラーメン愛好家のための専門的な店舗情
 | カテゴリ                 | 技術・ライブラリ                                                                                                                                           | バージョン  | 用途                               |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------- |
 | **言語**                 | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="20" height="20" alt="TypeScript Logo"/> TypeScript | 6.0.3       | 型安全性の確保                     |
-| **ランタイム**           | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="20" height="20" alt="Node.js Logo"/> Node.js               | 24.x 以上   | JavaScript 実行環境                |
+| **ランタイム**           | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="20" height="20" alt="Node.js Logo"/> Node.js               | 24.x        | JavaScript 実行環境                |
 | **フレームワーク**       | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg" width="20" height="20" alt="Express Logo"/> Express             | 4.21.2      | Web アプリケーションフレームワーク |
 | **データベース**         | <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="20" height="20" alt="PostgreSQL Logo"/> PostgreSQL | 16.x 以上   | リレーショナルデータベース         |
 | **ORM**                  | Prisma                                                                                                                                                     | 7.9.1       | データベース操作・マイグレーション |
@@ -252,7 +252,10 @@ erDiagram
 
 ### 前提条件
 
-- Node.js (v24 以上 ※ v22 は 2027-04-30 に EOL。現時点の Active LTS である 24 を基準とする)
+- Node.js 24.x（v24.22.1 以上。2026-10-21 のセキュリティリリースによる修正版）
+  - v22 は 2027-04-30 に EOL のため、現時点の Active LTS である 24 を基準とする
+  - package.json の `engines.node`（`"24.x"`）が本番（Render）と CI のバージョン指定を兼ねる。
+    CI は 24 系でのみ検証している
 - PostgreSQL (v16 以上)
 - Firebase プロジェクトの設定
 
