@@ -252,10 +252,13 @@ erDiagram
 
 ### 前提条件
 
-- Node.js 24.x（v24.22.1 以上。2026-10-21 のセキュリティリリースによる修正版）
+- Node.js 24.x（常に 24 系の最新パッチを使う）
   - v22 は 2027-04-30 に EOL のため、現時点の Active LTS である 24 を基準とする
   - package.json の `engines.node`（`"24.x"`）が本番（Render）と CI のバージョン指定を兼ねる。
-    CI は 24 系でのみ検証している
+    CI は実行のたびに、Render はデプロイのたびに 24 系の最新パッチへ解決される
+  - Node.js のセキュリティリリースが出たら、Render で再デプロイ（Manual Deploy → Deploy latest commit）し、
+    ローカルの Node も更新する。どちらも自動では上がらない
+  - CI は 24 系でのみ検証している
 - PostgreSQL (v16 以上)
 - Firebase プロジェクトの設定
 
