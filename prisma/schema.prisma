@@ -72,6 +72,11 @@ model Image {
   store Store @relation(fields: [store_id], references: [id]) // 店舗との関連
   user  User  @relation(fields: [user_id], references: [id]) // ユーザーとの関連
 
+  // PostgreSQL は外部キー制約を張っても子側のカラムにインデックスを作らない。
+  // 店舗別の画像一覧（store_id での検索）と、親行削除時の参照整合性チェックが
+  // どちらも全件走査になるため明示的に張る。
+  @@index([store_id])
+  @@index([user_id])
   @@map("images")
 }
 
@@ -89,6 +94,11 @@ model ImageStoreToppingCall {
   store_topping_call StoreToppingCall @relation(fields: [store_topping_call_id], references: [id])
   topping            Topping          @relation(fields: [topping_id], references: [id])
 
+  // image_id は画像ごとのトッピング取得と deleteMany の条件に使う。
+  // 残り2本は親行（トッピング／店舗トッピングコール）削除時の参照チェック用。
+  @@index([image_id])
+  @@index([store_topping_call_id])
+  @@index([topping_id])
   @@map("image_store_topping_calls")
 }
 
@@ -152,6 +162,12 @@ model StoreToppingCall {
   call_option CallOption @relation(fields: [call_option_id], references: [id])
   noodle_type NoodleType @relation(fields: [noodle_type_id], references: [id])
 
+  // store_id は店舗詳細の取得と、更新時の deleteMany（削除→再登録）の条件に使う。
+  // 残り3本はマスタ側（トッピング／コールオプション／麺種別）削除時の参照チェック用。
+  @@index([store_id])
+  @@index([topping_id])
+  @@index([call_option_id])
+  @@index([noodle_type_id])
   @@map("store_topping_calls")
 }
 
