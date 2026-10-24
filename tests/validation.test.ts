@@ -308,8 +308,12 @@ describe('リクエスト検証', () => {
             })
         })
 
-        it('画像のトッピング選択も同じ上限で弾く', async () => {
-            const app = createValidationApp({ body: imageUploadInputSchema })
+        // 投稿と更新は同じ項目定義を共有しているが、片方だけ書き換えられても気づけるよう両方を見る
+        it.each([
+            ['投稿', imageUploadInputSchema],
+            ['更新', imageUpdateInputSchema],
+        ])('画像のトッピング選択も同じ上限で弾く（%s）', async (_, schema) => {
+            const app = createValidationApp({ body: schema })
 
             const ok = await request(app)
                 .post('/')
