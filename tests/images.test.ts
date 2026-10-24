@@ -21,6 +21,12 @@ const imageToppingCallRow = {
     },
 }
 
+/** 投稿・更新で送るトッピング選択 */
+const toppingSelection = { topping_id: 1, call_option_id: 1, store_topping_call_id: 10 }
+
+/** toppingSelection が指す、店舗1の店舗別トッピングコール（保存前の検証が引く形） */
+const storeToppingCallRow = { id: BigInt(10), topping_id: BigInt(1), call_option_id: BigInt(1) }
+
 describe('Images', () => {
     it('GET /stores/{storeId}/images が spec どおりに応答する', async () => {
         const { app, prisma } = createTestApp()
@@ -70,7 +76,7 @@ describe('Images', () => {
         const { app, prisma } = createTestApp()
         prisma.image.create.mockResolvedValue(imageRow)
         prisma.imageStoreToppingCall.create.mockResolvedValue(imageToppingCallRow)
-        prisma.storeToppingCall.findMany.mockResolvedValue([{ id: BigInt(10), store_id: BigInt(1) }])
+        prisma.storeToppingCall.findMany.mockResolvedValue([storeToppingCallRow])
 
         const res = await request(app)
             .post('/stores/1/images')
@@ -79,7 +85,7 @@ describe('Images', () => {
                 menu_type: 1,
                 menu_name: '小ラーメン',
                 image_base64: IMAGE_BASE64,
-                topping_selections: [{ topping_id: 1, call_option_id: 1, store_topping_call_id: 10 }],
+                topping_selections: [toppingSelection],
             })
 
         expectApiResponse(res, { method: 'post', path: '/stores/{storeId}/images', status: 201 })
@@ -114,7 +120,7 @@ describe('Images', () => {
         prisma.image.update.mockResolvedValue(imageRow)
         prisma.imageStoreToppingCall.deleteMany.mockResolvedValue({ count: 1 })
         prisma.imageStoreToppingCall.create.mockResolvedValue(imageToppingCallRow)
-        prisma.storeToppingCall.findMany.mockResolvedValue([{ id: BigInt(10), store_id: BigInt(1) }])
+        prisma.storeToppingCall.findMany.mockResolvedValue([storeToppingCallRow])
 
         const res = await request(app)
             .put('/stores/1/images/100')
@@ -122,7 +128,7 @@ describe('Images', () => {
             .send({
                 menu_type: 1,
                 menu_name: '大ラーメン',
-                topping_selections: [{ topping_id: 1, call_option_id: 1, store_topping_call_id: 10 }],
+                topping_selections: [toppingSelection],
             })
 
         expectApiResponse(res, {
@@ -130,6 +136,85 @@ describe('Images', () => {
             path: '/stores/{storeId}/images/{imageId}',
             status: 200,
         })
+    })
+
+    // #131: 外部キー制約が保証するのは行が「どこかの店舗に」あることだけ。
+    // パスの店舗のものかはサービスで確かめ、不正な入力ではアップロードもしない
+    it('POST は他店舗や存在しない店舗別トッピングコールを 400 で弾き、アップロードしない（#131）', async () => {
+        const { app, prisma } = createTestApp()
+        // パスの店舗に属さないIDは、店舗で絞った問い合わせから返ってこない
+        prisma.storeToppingCall.findMany.mockResolvedValue([])
+
+        const res = await request(app)
+            .post('/stores/1/images')
+            .set('Authorization', AUTH_HEADER)
+            .send({
+                menu_type: 1,
+                menu_name: '小ラーメン',
+                image_base64: IMAGE_BASE64,
+                topping_selections: [toppingSelection],
+            })
+
+        expectApiResponse(res, { method: 'post', path: '/stores/{storeId}/images', status: 400 })
+        expect(res.body.error).toBe('指定された店舗別トッピングコールがこの店舗に存在しません')
+        // 他店舗のIDを弾けるのは、問い合わせをパスの店舗で絞っているため
+        expect(prisma.storeToppingCall.findMany).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { id: { in: [BigInt(10)] }, store_id: BigInt(1) } }),
+        )
+        expect(bucket.file).not.toHaveBeenCalled()
+        expect(prisma.image.create).not.toHaveBeenCalled()
+    })
+
+    it.each([
+        ['トッピングID', { topping_id: 2 }],
+        ['コールオプションID', { call_option_id: 2 }],
+    ])('POST は店舗別トッピングコールと食い違う%sを 400 で弾く（#131）', async (_, mismatch) => {
+        const { app, prisma } = createTestApp()
+        prisma.storeToppingCall.findMany.mockResolvedValue([storeToppingCallRow])
+
+        const res = await request(app)
+            .post('/stores/1/images')
+            .set('Authorization', AUTH_HEADER)
+            .send({
+                menu_type: 1,
+                menu_name: '小ラーメン',
+                image_base64: IMAGE_BASE64,
+                topping_selections: [{ ...toppingSelection, ...mismatch }],
+            })
+
+        expectApiResponse(res, { method: 'post', path: '/stores/{storeId}/images', status: 400 })
+        expect(res.body.error).toBe(
+            'トッピングIDまたはコールオプションIDが店舗別トッピングコールの内容と一致しません',
+        )
+        expect(bucket.file).not.toHaveBeenCalled()
+        expect(prisma.image.create).not.toHaveBeenCalled()
+    })
+
+    it('PUT も他店舗の店舗別トッピングコールを 400 で弾き、アップロードも更新もしない（#131）', async () => {
+        const { app, prisma } = createTestApp()
+        prisma.image.findFirst.mockResolvedValue({ ...imageRow, user_id: TEST_USER_ID })
+        prisma.storeToppingCall.findMany.mockResolvedValue([])
+
+        const res = await request(app)
+            .put('/stores/1/images/100')
+            .set('Authorization', AUTH_HEADER)
+            .send({
+                menu_type: 1,
+                menu_name: '大ラーメン',
+                image_base64: IMAGE_BASE64,
+                topping_selections: [toppingSelection],
+            })
+
+        expectApiResponse(res, {
+            method: 'put',
+            path: '/stores/{storeId}/images/{imageId}',
+            status: 400,
+        })
+        expect(prisma.storeToppingCall.findMany).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { id: { in: [BigInt(10)] }, store_id: BigInt(1) } }),
+        )
+        expect(bucket.file).not.toHaveBeenCalled()
+        expect(prisma.image.update).not.toHaveBeenCalled()
     })
 
     it('DELETE /stores/{storeId}/images/{imageId} が spec どおりに応答する', async () => {
