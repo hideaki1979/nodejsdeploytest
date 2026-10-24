@@ -58,11 +58,23 @@ jobs:
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          # package.json の engines.node が ">=24" のため 24 系に合わせる。
+          # Node のバージョンは package.json の engines.node（"24.x"）だけで決め、
+          # 本番（Render）と CI が同じ指定を参照するようにする。
+          # Render は engines.node を範囲として解決し、上限のない指定（以前の ">=24"）は
+          # その時点の最新リリースに解決される。実際に本番だけ 26 系でビルドされうる
+          # 状態だったため、メジャーが勝手に上がらないよう上限を付けている。
+          # Render の環境変数 NODE_VERSION や .node-version / .nvmrc は engines.node より
+          # 優先されるため、指定が二重にならないよう置かないこと。
+          #
           # Node 22 は 2025-10 に Maintenance へ移行し 2027-04-30 で EOL のため、
           # 現時点の Active LTS である 24 を基準にする。
           # @types/node も ^24 に揃えてあり、型と実行環境が食い違わないようにしている。
-          node-version: "24"
+          node-version-file: "package.json"
+          # 既定(false)ではランナーのツールキャッシュにある 24 系をそのまま使うため、
+          # ランナーイメージが更新されるまでセキュリティリリースが取り込まれない。
+          # 実際 2026-10-21 の実行でも、修正版 v24.22.1 ではなくキャッシュの v24.22.0 が
+          # 使われていた。毎回 24 系の最新パッチを確認させる。
+          check-latest: true
           cache: "npm"
 
       # `npm install` ではなく `npm ci` を使う。
