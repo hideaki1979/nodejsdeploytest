@@ -8,6 +8,7 @@ import { registry } from '../openapi/registry'
 import { z } from '../openapi/zod'
 import { registerNotFoundResponse } from './common.schema'
 import { requiredInteger, requiredPlainText, optionalArray, toValidatorString } from './primitives'
+import { MAX_TOPPING_CALLS } from './store.schema'
 
 /** data URL 形式のBase64画像データ（移行前の imageValidation.ts の custom と同じ正規表現） */
 const IMAGE_DATA_URL_PATTERN = /^data:image\/(jpeg|png|gif|webp);base64,([A-Za-z0-9+/=])+$/
@@ -51,8 +52,9 @@ const commonImageFields = {
     menu_name: requiredPlainText('メニュー名', { description: 'メニュー名' }),
 }
 
+// トッピング選択はその店舗のトッピングコールから選ぶため、店舗側と同じ上限を使う
 const toppingSelectionsField = (description: string) =>
-    optionalArray(imageToppingSelectionSchema, 'トッピング選択は配列形式で指定してください', {
+    optionalArray(imageToppingSelectionSchema, 'トッピング選択', MAX_TOPPING_CALLS, {
         description,
     })
 

@@ -216,7 +216,17 @@ export function enumField<const T extends readonly [string, ...string[]]>(
 /**
  * 任意の配列項目。移行前: optional() → isArray()
  * 未指定のみ素通しし、null は配列でないため弾かれる。
+ *
+ * 上限は必須にしている。zod は不正な要素ごとに issue を溜め込むため、
+ * 上限の無い配列に不正な要素を大量に詰めた1リクエストでメモリを使い果たす
+ * （GHSA-mrhx-c7xc-m3w5）。4.6.6 以降は .max() を超えた時点で要素の検証を
+ * 打ち切るが、上限が無ければ打ち切りようがなく、zod を上げても防げない。
+ * 実測では、20万件の不正な要素で issue が60万件・ヒープが約300MB増えた（4.6.7 でも同じ）。
  */
-export function optionalArray<T extends z.ZodType>(item: T, message: string, doc: FieldDoc) {
-    return z.array(item, { error: message }).optional().openapi(doc)
+export function optionalArray<T extends z.ZodType>(item: T, label: string, max: number, doc: FieldDoc) {
+    return z
+        .array(item, { error: `${label}は配列形式で指定してください` })
+        .max(max, { error: `${label}は${max}件以内で指定してください` })
+        .optional()
+        .openapi(doc)
 }

@@ -20,6 +20,15 @@ import {
 // リクエスト
 // =============================================================================
 
+/**
+ * 1リクエストで受け付けるトッピングコールの上限。
+ *
+ * 業務上の制約ではなく、検証コストを抑えるための上限（primitives.ts の optionalArray を参照）。
+ * 正当なリクエストを弾かないよう、マスタの全組み合わせ
+ * （insert_tables.sql 時点でトッピング6 × コール10 × タイミング2 × 麺種3 = 360件）を上回る値にしている。
+ */
+export const MAX_TOPPING_CALLS = 1000
+
 export const storeToppingCallInputSchema = registry.register(
     'StoreToppingCallInput',
     z
@@ -59,7 +68,8 @@ export const storeInputSchema = registry.register(
             lot_detail: optionalText('ロット制詳細', 1000, { description: 'ロット制詳細' }),
             topping_calls: optionalArray(
                 storeToppingCallInputSchema,
-                'トッピングコールは配列形式で指定してください',
+                'トッピングコール',
+                MAX_TOPPING_CALLS,
                 {
                     description: [
                         '店舗別トッピングコールの配列。\n',
