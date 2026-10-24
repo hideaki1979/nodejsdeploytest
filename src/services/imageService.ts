@@ -41,6 +41,10 @@ export class ImageService {
    * @returns 作成された画像エントリ
    */
     async createImage(storeId: string | number, data: StoreImageUploadData, userId: string) {
+        // トッピング選択の検証はアップロードより前に行う。
+        // 不正な入力のために「アップロード → 補償処理で削除」の往復を起こさないため
+        await this.validateToppingSelections(BigInt(storeId), data.topping_selections)
+
         // StorageへのアップロードはネットワークI/OのためDBトランザクションの外で行う。
         // トランザクション内で実行すると、アップロードの所要時間だけDB接続とロックを占有し、
         // PRISMA_TRANSACTION_TIMEOUT超過でロールバックする可能性がある
@@ -236,6 +240,10 @@ export class ImageService {
             await this.validateImageExists(tx, storeBigInt, imageBigInt)
         })
 
+        // トッピング選択の検証もアップロードより前に行う。
+        // 認可より後に置くのは、権限の無い利用者に照合結果を返さないため
+        await this.validateToppingSelections(storeBigInt, data.topping_selections)
+
         // 【第2段階】新しい画像をトランザクション外でアップロードする。
         // 保存先はボディのstore_idではなく、認可判定に使ったパスパラメータのstoreIdを使用する
         const uploadedUrl = data.image_base64
@@ -382,6 +390,52 @@ export class ImageService {
         }
 
         return image
+    }
+
+    /**
+     * トッピング選択が保存先の店舗のトッピングコールを正しく指しているか検証する（共通処理）
+     *
+     * 外部キー制約が保証するのは store_topping_call_id の行が「どこかの店舗に」あることだけで、
+     * パスの店舗のものかは保証しない。topping_id / call_option_id は店舗別トッピングコールから
+     * 一意に決まる値のため、食い違いは黙って差し替えずに拒否する（差し替えるとクライアントの不具合が見えなくなる）。
+     *
+     * トランザクションの外で検証してよい。店舗別トッピングコールの store_id は後から変わらず、
+     * 検証後に行が削除された場合は保存時に外部キー制約で失敗するため
+     * @param storeId 保存先の店舗ID（パスパラメータ）
+     * @param selections リクエストのトッピング選択
+     * @throws AppError 他店舗・存在しないIDの指定、または内容の食い違いがある場合は400
+     */
+    private async validateToppingSelections(
+        storeId: bigint,
+        selections: StoreImageUploadData['topping_selections']
+    ): Promise<void> {
+        if (!selections || selections.length === 0) return
+
+        const storeToppingCalls = await this.prisma.storeToppingCall.findMany({
+            where: {
+                id: { in: [...new Set(selections.map(selection => BigInt(selection.store_topping_call_id)))] },
+                store_id: storeId
+            },
+            select: { id: true, topping_id: true, call_option_id: true }
+        })
+        const storeToppingCallById = new Map(storeToppingCalls.map(call => [call.id, call]))
+
+        for (const selection of selections) {
+            const storeToppingCall = storeToppingCallById.get(BigInt(selection.store_topping_call_id))
+
+            if (!storeToppingCall) {
+                this.logger.error({ storeId, selection }, '店舗別トッピングコール未存在エラー発生')
+                throw new AppError('指定された店舗別トッピングコールがこの店舗に存在しません', 400)
+            }
+
+            if (
+                storeToppingCall.topping_id !== BigInt(selection.topping_id) ||
+                storeToppingCall.call_option_id !== BigInt(selection.call_option_id)
+            ) {
+                this.logger.error({ storeId, selection }, 'トッピング選択不整合エラー発生')
+                throw new AppError('トッピングIDまたはコールオプションIDが店舗別トッピングコールの内容と一致しません', 400)
+            }
+        }
     }
 
     /**
