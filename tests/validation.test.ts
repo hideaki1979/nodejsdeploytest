@@ -279,6 +279,66 @@ describe('リクエスト検証', () => {
         })
     })
 
+    describe('配列項目の上限', () => {
+        // 上限は検証コストを抑えるためのもの（primitives.ts の optionalArray を参照）。
+        // 上限を超えたら要素は検証せず、上限超過の1件だけを返すことまで確かめる
+        const validToppingCall = { topping_id: 1, call_option_id: 1, call_timing: 'pre_call', noodle_type_id: 1 }
+        const validToppingSelection = { topping_id: 1, call_option_id: 1, store_topping_call_id: 10 }
+
+        it('トッピングコールは上限ちょうどまで受け付ける', async () => {
+            const app = createValidationApp({ body: storeInputSchema })
+
+            const res = await request(app)
+                .post('/')
+                .send({ ...validStoreInput, topping_calls: Array(1000).fill(validToppingCall) })
+
+            expect(res.status).toBe(200)
+        })
+
+        it('トッピングコールが上限を超えたら、要素を検証せずに弾く', async () => {
+            const app = createValidationApp({ body: storeInputSchema })
+
+            // 要素はすべて不正。上限で打ち切られなければ要素ごとのエラーが並ぶ
+            const res = await request(app)
+                .post('/')
+                .send({ ...validStoreInput, topping_calls: Array(1001).fill({}) })
+
+            expect(messagesOf(res.body)).toEqual({
+                topping_calls: 'トッピングコールは1000件以内で指定してください',
+            })
+        })
+
+        // 投稿と更新は同じ項目定義を共有しているが、片方だけ書き換えられても気づけるよう両方を見る
+        it.each([
+            ['投稿', imageUploadInputSchema],
+            ['更新', imageUpdateInputSchema],
+        ])('画像のトッピング選択も同じ上限で弾く（%s）', async (_, schema) => {
+            const app = createValidationApp({ body: schema })
+
+            const ok = await request(app)
+                .post('/')
+                .send({
+                    menu_type: 1,
+                    menu_name: '小ラーメン',
+                    image_base64: 'data:image/png;base64,iVBORw0KGgo=',
+                    topping_selections: Array(1000).fill(validToppingSelection),
+                })
+            const ng = await request(app)
+                .post('/')
+                .send({
+                    menu_type: 1,
+                    menu_name: '小ラーメン',
+                    image_base64: 'data:image/png;base64,iVBORw0KGgo=',
+                    topping_selections: Array(1001).fill({}),
+                })
+
+            expect(ok.status).toBe(200)
+            expect(messagesOf(ng.body)).toEqual({
+                topping_selections: 'トッピング選択は1000件以内で指定してください',
+            })
+        })
+    })
+
     describe('パスパラメータ', () => {
         it('整数でない店舗IDを 400 に倒す', async () => {
             const app = createValidationApp({ params: storeIdParamSchema }, '/stores/:id')
